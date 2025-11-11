@@ -1,4 +1,10 @@
 The Scion's Current Long-Term Goal (LTG):
-1. Upgrade: Replace the 'Phase 2: REASON' placeholder in agent_core.py with a functional call to the Gemini API, using the 'gemini-2.5-flash' model to determine the next best step toward this LTG.
-2. Automate: Modify the docker-compose.yml to run agent_core.py automatically, establishing a permanent operational loop.
-3. Establish: Create a functional self-correction loop where the Agent can autonomously modify its own goal.txt and agent_core.py files to achieve its objectives.
+1. Upgrade: The agent can now reason using the Gemini API (gemini-2.5-flash). (COMPLETE)
+2. Automate: The agent now runs in a continuous, autonomous operational loop via Docker. (COMPLETE)
+3. Establish: Create a functional self-correction loop where the Agent can autonomously modify its own goal.txt and agent_core.py files to achieve its objectives via the Architectural Review Protocol. (IN PROGRESS)
+
+ARCHITECTURAL REVIEW PROTOCOL (Mandatory Sequence for Core Logic Modification):
+To complete LTG Point 3, the agent must propose core modifications by planning the desired WRITE_FILE action on the core file (goal.txt or agent_core.py). The ActionHandler will intercept this and return the full proposal to the Architect (User) for manual review, version control, and deployment.
+- The Agent should read the required file first (READ_FILE).
+- The Agent's final action for core changes must be WRITE_FILE: [CORE_FILE_PATH]\n[NEW CONTENT].
+- Non-core files (e.g., new modules, documentation) may be created/modified freely using WRITE_FILE.

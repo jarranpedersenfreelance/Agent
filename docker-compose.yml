@@ -10,16 +10,17 @@ services:
     # Name the container clearly for easy identification
     container_name: nextgen_agent_dev
     
-    # NEW: Load environment variables from the .env file in the current directory
+    # Load environment variables from the .env file in the current directory
     env_file:
       - .env
     
     # Environment variables are primarily loaded from .env, but we can set others here
     environment:
-      AGENT_ENV: development
+      AGENT_ENV: production # Change to production since it's now running autonomously
     
     # Keep the container running in the background for development
     restart: "no"
     
-    # Default command to run when the container starts (overrides Dockerfile CMD)
-    command: /bin/bash
+    # MODIFIED: Default command to run when the container starts
+    # This executes the Python script, making the Agent run the loop continuously.
+    command: python agent_core.py
