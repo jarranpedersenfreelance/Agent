@@ -1,0 +1,3 @@
+# Primary dependencies for the Self-Evolving Agent
+google-genai
+pydantic

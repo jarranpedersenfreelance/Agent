@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  agent:
+    # Use the Dockerfile in the current directory (./Agent) to build the image
+    build: .
+    # Map the current working directory on the host (MacBook) to /app inside the container
+    volumes:
+      - .:/app
+    # Name the container clearly for easy identification
+    container_name: nextgen_agent_dev
+    
+    # NEW: Load environment variables from the .env file in the current directory
+    env_file:
+      - .env
+    
+    # Environment variables are primarily loaded from .env, but we can set others here
+    environment:
+      AGENT_ENV: development
+    
+    # Keep the container running in the background for development
+    restart: "no"
+    
+    # Default command to run when the container starts (overrides Dockerfile CMD)
+    command: /bin/bash
