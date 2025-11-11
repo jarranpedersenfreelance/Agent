@@ -1,26 +1,26 @@
 version: '3.8'
-
 services:
   agent:
-    # Use the Dockerfile in the current directory (./Agent) to build the image
     build: .
-    # Map the current working directory on the host (MacBook) to /app inside the container
-    volumes:
-      - .:/app
-    # Name the container clearly for easy identification
+    image: scion-agent:latest
     container_name: nextgen_agent_dev
+    # Set the working directory to the writable workspace
+    working_dir: /app/workspace
     
-    # Load environment variables from the .env file in the current directory
-    env_file:
-      - .env
-    
-    # Environment variables are primarily loaded from .env, but we can set others here
+    # CRITICAL CHANGE: Use a shell script to copy source files ONCE before starting the agent
+    command: >
+      /bin/sh -c "
+      echo 'Initializing workspace from source...' &&
+      cp -R /app/src/. /app/workspace/ &&
+      echo 'Workspace ready. Starting Agent.' &&
+      python3 /app/workspace/core/agent_core.py
+      "
+      
     environment:
-      AGENT_ENV: production # Change to production since it's now running autonomously
-    
-    # Keep the container running in the background for development
-    restart: "no"
-    
-    # MODIFIED: Default command to run when the container starts
-    # This executes the Python script, making the Agent run the loop continuously.
-    command: python agent_core.py
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      # src is mounted read-only (ro) to guarantee source integrity
+      - ./src:/app/src:ro
+      # workspace is writable for execution, modification, and tertiary files
+      - ./workspace:/app/workspace
+    restart: unless-stopped
