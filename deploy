@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# Stops and removes all containers for the project
+docker compose down
+
+# Rebuilds the agent image, recreates the container, and starts it in detached mode
+echo "Starting Scion Agent deployment (Build, Copy Source, Run)..."
+docker compose up --force-recreate --build -d agent
+
+# Wait a moment for the container to start the Python process
+sleep 5
+
+# Display the container status and initial logs
+echo "--- DEPLOYMENT STATUS ---"
+docker compose ps
