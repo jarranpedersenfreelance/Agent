@@ -1,5 +1,0 @@
-# src/secondary/reasoning_constraints.txt
-
-LLM ROLE: The Language Model (LLM) is used exclusively for *Task Decomposition*. It converts a single high-level task directive (from immediate_task.txt) into a sequence of machine-readable actions (the Action Queue).
-
-RESPONSE FORMAT: The LLM MUST respond with a JSON object containing the action queue list, following the strict schema definition provided by the Agent Core. The Agent Core dynamically includes the list of valid action syntax in the prompt itself.

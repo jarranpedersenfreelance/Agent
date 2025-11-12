@@ -1,70 +1,64 @@
 import os
-import datetime
+import yaml
 import json
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
-# --- FILE I/O HELPERS ---
-
-def read_text_file(file_path: str) -> str:
-    """Reads the entire content of any text file."""
+def load_file_content(path: str, default_content: Optional[str] = None) -> str:
+    """Loads content from a file path, or returns a default string if the file is not found."""
     try:
-        with open(file_path, 'r') as f:
+        with open(path, 'r', encoding='utf-8') as f:
             return f.read().strip()
-    except Exception as e:
-        return f"ERROR reading file {file_path}: {e}"
+    except FileNotFoundError:
+        return default_content if default_content is not None else f"Error: File not found at {path}"
 
-# --- LOGGING HELPERS ---
-
-def log_initial_banner(constants: Dict[str, Any]):
-    """Logs the deployment banner to the action log file."""
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    banner = (
-        "\n"
-        "####################################################\n"
-        f"### AGENT REBOOT/DEPLOYMENT START: {timestamp} ###\n"
-        "####################################################\n"
-        "\n"
-    )
+def write_text_file(path: str, content: str) -> bool:
+    """Safely writes content to a file."""
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     try:
-        log_file = constants['PATHS']['ACTION_LOG_FILE']
-        with open(log_file, 'a') as f:
-            f.write(banner)
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(content)
+        return True
     except Exception as e:
-        print(f"Error writing to action log banner: {e}")
+        print(f"Error writing to file {path}: {e}")
+        return False
 
-def log_action(constants: Dict[str, Any], cycle_time: str, planned_action: str, execution_result: str):
-    """Logs a single action cycle to the action log file."""
-    log_entry = (
-        f"--- Cycle Log {cycle_time} ---\n"
-        f"ACTION PLANNED: {planned_action}\n"
-        f"EXECUTION RESULT: {execution_result}\n"
-        f"-----------------------------------\n"
-    )
+def yaml_safe_load(path: str) -> Dict[str, Any]:
+    """Safely loads YAML content from a file."""
     try:
-        log_file = constants['PATHS']['ACTION_LOG_FILE']
-        with open(log_file, 'a') as f:
-            f.write(log_entry)
+        with open(path, 'r') as f:
+            return yaml.safe_load(f) or {}
+    except FileNotFoundError:
+        return {}
     except Exception as e:
-        print(f"Error writing to action log: {e}")
+        print(f"Error loading YAML from {path}: {e}")
+        return {}
 
-# --- CONTEXTUALIZATION HELPERS ---
+def yaml_safe_dump(path: str, data: Dict[str, Any]):
+    """Safely dumps YAML content to a file."""
+    try:
+        with open(path, 'w') as f:
+            yaml.safe_dump(data, f, default_flow_style=False)
+    except Exception as e:
+        print(f"Error dumping YAML to {path}: {e}")
 
-def contextualize_filesystem(constants: Dict[str, Any], files_list: list, api_calls_remaining: int) -> str:
-    """Generates the file system and quota context string for the prompt."""
-    file_count = len(files_list)
-    
-    # Files to check against for core file count
-    core_files_names = [
-        constants['PATHS']['GOAL_FILE'],
-        constants['PATHS']['CORE_FILE'],
-        constants['PATHS']['MEMORY_FILE'],
-        'docker-compose.yml'
-    ]
-    core_files_count = sum(1 for f in files_list if any(name in f for name in core_files_names))
-    
-    return (
-        f"LOCAL CONTEXTUALIZATION:\n"
-        f" - Total Known Files: {file_count} (Core: {core_files_count})\n"
-        f" - API Quota Remaining: {api_calls_remaining} of {constants['API']['MAX_DAILY_QUOTA']}\n"
-        f" - RATIONING STATUS: {'ACTIVE' if api_calls_remaining <= constants['API']['QUOTA_LOW_THRESHOLD'] else 'IDLE'}\n"
-    )
+def json_safe_load(path: str) -> Dict[str, Any]:
+    """Safely loads JSON content from a file."""
+    try:
+        with open(path, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
+    except json.JSONDecodeError:
+        print(f"Error decoding JSON from {path}. Returning empty dict.")
+        return {}
+    except Exception as e:
+        print(f"Error loading JSON from {path}: {e}")
+        return {}
+
+def json_safe_dump(path: str, data: Dict[str, Any]):
+    """Safely dumps JSON content to a file."""
+    try:
+        with open(path, 'w') as f:
+            json.dump(data, f, indent=4)
+    except Exception as e:
+        print(f"Error dumping JSON to {path}: {e}")

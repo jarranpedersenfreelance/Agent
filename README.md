@@ -14,7 +14,7 @@ These files are tracked by version control and are mounted **read-only** into th
 | **Base Level** | Framework | Contains foundational files (`README.md`, `goal.txt`, `deploy`, etc.). |
 | **`src/core/`** | Core Logic | Contains the primary module managing the Agent's consciousness, state, and reasoning loop. |
 | **`src/secondary/`** | Execution Logic | Contains modular tools (e.g., action parsing, file handling, command execution) that abstract the physical layer. |
-| **`src/data/`** | Data File List | Contains empty files representing the data files used by the Agent as part of its operating logic. |
+| **`src/data/`** | Data File List | Contains files with default data representing the data files used by the Agent as part of its operating logic. |
 
 ### The Sandbox (Read-Write)
 This is the **`workspace/`** directory, the Agent's mutable environment where all operations occur.

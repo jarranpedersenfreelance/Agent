@@ -1,34 +1,22 @@
-# src/core/agent_constants.yaml
+FILE_PATHS:
+    ROOT: "./"
+    SRC: "src/"
+    DATA: "src/data/"
+    CORE: "src/core/"
+    ACTION_LOG_FILE: "data/action_log.txt"
+    MEMORY_STREAM_FILE: "data/memory_stream.json"
+    ACTION_QUEUE_FILE: "data/action_queue.json"
+    IMMEDIATE_TASK_FILE: "data/immediate_task.txt"
+    GOAL_FILE: "core/goal.txt"
+    REASONING_PRINCIPLES_FILE: "core/reasoning_principles.txt"
+    RESOURCES_STATE_FILE: "data/resource_state.yaml"
 
-# --- CORE AGENT CONFIGURATION ---
-AGENT:
-  # General settings
-  CYCLE_SLEEP_TIME: 5
-  DEPLOYED_FLAG: True
-
-# --- API CONFIGURATION ---
 API:
-  MODEL: "gemini-2.5-flash"
-  MAX_DAILY_QUOTA: 100
-  QUOTA_LOW_THRESHOLD: 10
+    MODEL: "gemini-2.5-flash"
+    DAILY_QUOTA: 100 # Example quota of 100 calls per day
 
-# --- FILE PATHS (Relative to /app/workspace) ---
-PATHS:
-  # Log and Operational Data
-  ACTION_LOG_FILE: "data/action_log.txt"
-  IMMEDIATE_TASK_FILE: "data/immediate_task.txt"
-  MEMORY_FILE: "data/memory_stream.json"
-  ACTION_QUEUE_FILE: "data/action_queue.json" 
-  
-  # Core Logic and Prompts (Read-Only)
-  GOAL_FILE: "core/goal.txt"
-  CORE_FILE: "core/agent_core.py"
-  PRINCIPLES_FILE: "core/reasoning_principles.txt"
-  ACTION_SYNTAX_FILE: "core/action_syntax.txt" # <--- UPDATED PATH/NAME
-  
-# --- MEMORY AND CONSTRAINT CONFIGURATION ---
-MEMORY_CONSTRAINTS:
-  # Size limits in bytes
-  MAX_MEMORY_FILE_SIZE_BYTES: 51200 # 50 KB
-  MAX_LOG_FILE_SIZE_BYTES: 512000   # 500 KB
-  MAX_CONTEXT_STRING_SIZE_BYTES: 10240 # 10 KB
+AGENT:
+    LOOP_SLEEP_SECONDS: 0.5 # Default sleep time between cycles (allows tight loop while preventing CPU exhaustion)
+    MAX_REASONING_STEPS: 100
+    DEPLOYED_FLAG: False # Flag for initial deployment check
+    CONTEXT_TRUNCATION_LIMIT: 500

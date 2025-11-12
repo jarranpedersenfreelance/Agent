@@ -1,1 +1,1 @@
-IMMEDIATE_TASK: Establish a foundational understanding of the agent's current operating environment and file structure by listing all files in the container and saving the output to persistent memory.
+CREATE_DEBUG_SNAPSHOT:

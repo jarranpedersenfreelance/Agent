@@ -1,0 +1,111 @@
+This file defines prompt formats to send to Gemini manually.
+All prompts expect the codebase_snapshot.txt file to be included as an accompaning file.
+
+—----------------------------------
+RESCAN
+—----------------------------------
+
+Forget everything you know about the codebase and past versions of it.
+Scan the provided file to understand the code repository for the project.
+Pay special attention to the README file to keep the project specifications in mind.
+
+Update your memory so that we can discuss code improvements in future Turns.
+
+—----------------------------------
+IMPLEMENT LIST
+—----------------------------------
+
+In the last Turn you generated a list of issues to work on for the project.
+
+Your task is to implement as many fixes/features from the list that you can in one Turn.
+Make sure the solutions are quality, do not sacrifice quality for quantity of solutions.
+Directly provide the changed code that implements your solutions.
+When providing code, always provide the full file contents so that I can easily update them with a copy paste.
+Additionally, explain any file restructuring or command execution that is needed. 
+Provide concise explanations for all the changes.
+
+At the end of you response, include a list of the issues generated in the last Turn, minus the issues that were fixed or implemented.
+
+—----------------------------------
+DEBUG
+—----------------------------------
+
+Scan the provided file to understand the code repository for the project.
+Pay special attention to the README file to keep the project specifications in mind.
+
+Your task is to determine areas where there are bugs, flawed logic, or missing code.
+
+You are to provide a list of up to 10 issues.
+Try to provide the full 10, only providing less if you truly feel there aren't that many issues.
+
+—----------------------------------
+REFACTOR
+—----------------------------------
+
+Scan the provided file to understand the code repository for the project.
+Pay special attention to the README file to keep the project specifications in mind.
+
+Your task is to determine areas where there are unnecessary comments or code, or bloat that should be cut.
+Additionally, identify actions that can be taken to refactor the code to be cleaner, more readable, or better layed out.
+Keep in mind that python modules should be 300 lines or less, with few exceptions (exceptions should have a comment marking them).
+Try to reduce the size of the entire project as much as you can while retaining functionality, readability, and best coding practices.
+
+You are to provide a list of up to 10 issues.
+Try to provide the full 10, only providing less if you truly feel there aren't that many issues.
+
+—----------------------------------
+TASKING
+—----------------------------------
+
+Scan the provided file to understand the code repository for the project.
+Pay special attention to the README file to keep the project specifications in mind.
+
+Your task is to determine features that should be added based on the stated purpose of the project and our previous conversations.
+Determine the most critical missing features, and list them from most critical to least.
+
+You are to provide a list of up to 10 issues.
+Try to provide the full 10, only providing less if you truly feel there aren't that many features to add.
+
+—----------------------------------
+IMPLEMENT
+—----------------------------------
+
+Scan the provided file to understand the code repository for the project.
+Pay special attention to the README file to keep the project specifications in mind.
+
+Your task is to implement the feature outlined below.
+If the feature is something you can implement in one Turn, directly provide the changed code.
+When providing code, always provide the full file contents so that I can easily update them with a copy paste.
+Additionally, explain any file restructuring or command execution that is needed. 
+Provide concise explanations for all the changes.
+
+If you determine implementing the feature with your current knowledge is suboptimal and you need more information from me, ask me for that information instead of providing changes.
+If you determine implementing the feature all at once is suboptimal (e.g. too many file changes, too hard to compute), instead break the feature up into sub features and provide a list of those.
+When providing a list of sub features, don't provide more than five.
+
+FEATURE:
+
+{Replace With Feature Description}
+
+—----------------------------------
+UPDATE TESTS
+—----------------------------------
+
+Scan the provided file to understand the code repository for the project.
+Pay special attention to the README file to keep the project specifications in mind.
+
+Your task is to examine the current automated tests in the repository and determine whether they are sufficient.
+Consider code coverage, effectiveness, maintainability, extensibility, etc.
+If the current tests are sufficient, provide a positive affirmation.
+Otherwise, provide a list of up to 10 changes to make to improve the tests.
+
+—----------------------------------
+MANUAL TEST
+—----------------------------------
+
+Scan the provided file to understand the code repository for the project.
+Pay special attention to the README file to keep the project specifications in mind.
+
+Your task is to provide up to 3 manual tests to run to verify the code is working as expected.
+These should check things not covered by the automatic tests that run on project deployment.
+

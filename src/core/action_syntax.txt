@@ -1,11 +1,24 @@
-# src/core/action_syntax.txt
+ACTION SYNTAX
+=============
 
-STRICT ACTION SYNTAX LIST (USE ONLY THESE TYPES AND FORMATS):
-1. READ_FILE: [file_path] (e.g., READ_FILE: core/goal.txt)
-2. WRITE_FILE: [file_path]\n[Content body starts here...] (e.g., WRITE_FILE: new_file.py\ndef test():\n  pass)
-3. RUN_COMMAND: [shell command] (e.g., RUN_COMMAND: ls -R)
-4. SLUMBER: [integer_cycles] (e.g., SLUMBER: 10)
-5. NEXT_TASK: [new_high_level_task_directive] (e.g., NEXT_TASK: Refactor the execution layer to use a command dictionary.)
-6. CREATE_DEBUG_SNAPSHOT: (e.g., CREATE_DEBUG_SNAPSHOT:)
+An action is a single-line command output by the Agent's reasoning step.
+The action must adhere to one of the following formats:
 
-Constraint: The NEXT_TASK action MUST be the last item in the list. This action signals completion of the current task and updates the primary goal file for the next set of actions.
+1. READ_FILE: <filename>
+   - Reads and returns the content of the specified file.
+   - Example: READ_FILE: src/core/agent_core.py
+
+2. WRITE_FILE: <filename> <content>
+   - Writes the specified content to the file. Overwrites existing content.
+   - Example: WRITE_FILE: src/new_script.py #!/usr/bin/env python\nprint("Hello")
+
+3. SLUMBER: [seconds]
+   - FIX #5: Puts the agent to sleep for a specified number of seconds (float).
+   - If no seconds are specified, a default, short sleep is performed.
+   - Example: SLUMBER: 3600 # Sleep for one hour
+   - Example: SLUMBER: 0.5 # Sleep for half a second
+
+4. CREATE_DEBUG_SNAPSHOT: [filename.zip]
+   - FIX #8, #9: Creates a zip file containing the contents of the 'data/' folder and key state files.
+   - If no filename is provided, a timestamped file is used.
+   - Example: CREATE_DEBUG_SNAPSHOT: post_refactor_state.zip
