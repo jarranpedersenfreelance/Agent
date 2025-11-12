@@ -1,4 +1,4 @@
-# core/agent_constants.yaml
+# src/core/agent_constants.yaml
 
 # --- CORE AGENT CONFIGURATION ---
 AGENT:
@@ -18,13 +18,14 @@ PATHS:
   ACTION_LOG_FILE: "data/action_log.txt"
   IMMEDIATE_TASK_FILE: "data/immediate_task.txt"
   MEMORY_FILE: "data/memory_stream.json"
+  ACTION_QUEUE_FILE: "data/action_queue.json" 
   
   # Core Logic and Prompts (Read-Only)
   GOAL_FILE: "core/goal.txt"
   CORE_FILE: "core/agent_core.py"
   PRINCIPLES_FILE: "core/reasoning_principles.txt"
-  CONSTRAINTS_FILE: "secondary/reasoning_constraints.txt"
-
+  ACTION_SYNTAX_FILE: "core/action_syntax.txt" # <--- UPDATED PATH/NAME
+  
 # --- MEMORY AND CONSTRAINT CONFIGURATION ---
 MEMORY_CONSTRAINTS:
   # Size limits in bytes

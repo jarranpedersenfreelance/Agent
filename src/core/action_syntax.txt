@@ -1,0 +1,11 @@
+# src/core/action_syntax.txt
+
+STRICT ACTION SYNTAX LIST (USE ONLY THESE TYPES AND FORMATS):
+1. READ_FILE: [file_path] (e.g., READ_FILE: core/goal.txt)
+2. WRITE_FILE: [file_path]\n[Content body starts here...] (e.g., WRITE_FILE: new_file.py\ndef test():\n  pass)
+3. RUN_COMMAND: [shell command] (e.g., RUN_COMMAND: ls -R)
+4. SLUMBER: [integer_cycles] (e.g., SLUMBER: 10)
+5. NEXT_TASK: [new_high_level_task_directive] (e.g., NEXT_TASK: Refactor the execution layer to use a command dictionary.)
+6. CREATE_DEBUG_SNAPSHOT: (e.g., CREATE_DEBUG_SNAPSHOT:)
+
+Constraint: The NEXT_TASK action MUST be the last item in the list. This action signals completion of the current task and updates the primary goal file for the next set of actions.

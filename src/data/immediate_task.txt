@@ -1,10 +1,1 @@
-IMMEDIATE_TASK: The Agent has just rebooted and requires core environment knowledge.
-
-ACTION 1: RUN_COMMAND: ls -R /app > data/known_files.txt
-ACTION 2: COMPLETE_TASK:
-ACTION 3: READ_FILE: data/known_files.txt
-ACTION 4: COMPLETE_TASK:
-ACTION 5: RUN_COMMAND: rm data/known_files.txt
-ACTION 6: COMPLETE_TASK:
-
-PROGRESSION: The agent is now capable of performing the action 'COMPLETE_TASK:' which automatically removes the top 'ACTION N:' line from this file upon execution. You MUST output this command after every successful action (except the final one). Your current task is to output the action at the top of the list.
+IMMEDIATE_TASK: Establish a foundational understanding of the agent's current operating environment and file structure by listing all files in the container and saving the output to persistent memory.
