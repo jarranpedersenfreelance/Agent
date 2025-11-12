@@ -1,0 +1,33 @@
+# core/agent_constants.yaml
+
+# --- CORE AGENT CONFIGURATION ---
+AGENT:
+  # General settings
+  CYCLE_SLEEP_TIME: 5
+  DEPLOYED_FLAG: True
+
+# --- API CONFIGURATION ---
+API:
+  MODEL: "gemini-2.5-flash"
+  MAX_DAILY_QUOTA: 100
+  QUOTA_LOW_THRESHOLD: 10
+
+# --- FILE PATHS (Relative to /app/workspace) ---
+PATHS:
+  # Log and Operational Data
+  ACTION_LOG_FILE: "data/action_log.txt"
+  IMMEDIATE_TASK_FILE: "data/immediate_task.txt"
+  MEMORY_FILE: "data/memory_stream.json"
+  
+  # Core Logic and Prompts (Read-Only)
+  GOAL_FILE: "core/goal.txt"
+  CORE_FILE: "core/agent_core.py"
+  PRINCIPLES_FILE: "core/reasoning_principles.txt"
+  CONSTRAINTS_FILE: "secondary/reasoning_constraints.txt"
+
+# --- MEMORY AND CONSTRAINT CONFIGURATION ---
+MEMORY_CONSTRAINTS:
+  # Size limits in bytes
+  MAX_MEMORY_FILE_SIZE_BYTES: 51200 # 50 KB
+  MAX_LOG_FILE_SIZE_BYTES: 512000   # 500 KB
+  MAX_CONTEXT_STRING_SIZE_BYTES: 10240 # 10 KB

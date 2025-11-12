@@ -1,0 +1,7 @@
+ACTION SYNTAX: You MUST respond ONLY with a single, most optimal action using one of the following exact formats. Do not include any explanations, preambles, or conversational text.
+
+- READ_FILE: [target_file_path]
+- WRITE_FILE: [target_file_path]\n[Content body starts here...]
+- RUN_COMMAND: [shell command]
+- SLUMBER: [integer_number_of_cycles]
+- ASK_USER_QUESTION: [Your single, focused question for the Architect]

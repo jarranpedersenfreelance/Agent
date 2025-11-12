@@ -5,8 +5,9 @@ import re
 import subprocess
 from typing import Any
 
-# Define files that are considered "core" and require Architectural Review for modification.
-CORE_FILES = ["goal.txt", "core/agent_core.py"]
+# CRITICAL FIX: Define files that are considered "core" and require Architectural Review for modification.
+# These paths must match the file paths relative to the workspace run directory.
+CORE_FILES = ["src/core/goal.txt", "src/core/agent_core.py"] 
 
 class ActionHandler:
     """
@@ -51,7 +52,9 @@ class ActionHandler:
         """
         action_type, target, content = self.parse_action(raw_action)
         
+        # CRITICAL CHECK: Does the target require Architect Review?
         if action_type in ["GENERATE_FILE", "MODIFY_FILE", "WRITE_FILE"]:
+            # Check if the target is one of the read-only core files
             if target in CORE_FILES:
                 status_message = "ARCHITECT_REVIEW_REQUIRED"
                 return action_type, target, content, status_message

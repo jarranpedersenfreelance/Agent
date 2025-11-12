@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# --- CONFIGURATION ---
+SERVICE_NAME="agent"
+# ---
+
+echo "--- DEPLOYMENT RESET (IMMEDIATE TASK) START: $(date) ---"
+
+# 1. Stop the running container
+echo "1. Stopping the Agent container..."
+docker-compose stop "$SERVICE_NAME" 2>/dev/null || true
+
+# 2. Overwrite the immediate task file
+echo "2. Forcing copy of fresh src/data/immediate_task.txt to workspace/data/..."
+cp -f src/data/immediate_task.txt workspace/data/immediate_task.txt
+
+# 3. Restart the container
+echo "3. Restarting the Docker container..."
+docker-compose start "$SERVICE_NAME"
+
+echo "--- DEPLOYMENT RESET COMPLETE ---"

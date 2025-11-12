@@ -6,12 +6,8 @@ services:
     container_name: nextgen_agent_dev
     working_dir: /app/workspace
     
-    # CRITICAL FIX: Set PYTHONPATH so Python can find 'secondary' module.
-    # CRITICAL FIX: Changed python execution command to run from workspace root.
     command: >
       /bin/sh -c "
-      echo 'Initializing workspace from source...' &&
-      cp -R /app/src/. /app/workspace/ &&
       echo 'Workspace ready. Starting Agent.' &&
       PYTHONPATH=/app/workspace python3 core/agent_core.py
       "
@@ -21,4 +17,9 @@ services:
     volumes:
       - ./src:/app/src:ro
       - ./workspace:/app/workspace
+      - ./README.md:/app/README.md:ro 
+      - ./Dockerfile:/app/Dockerfile:ro
+      - ./docker-compose.yml:/app/docker-compose.yml:ro
+      - ./deploy:/app/deploy:ro
+      - ./requirements.txt:/app/requirements.txt:ro
     restart: unless-stopped
