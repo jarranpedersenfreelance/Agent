@@ -2,8 +2,8 @@ version: '3.8'
 services:
   agent:
     build: .
-    image: scion-agent:latest
-    container_name: nextgen_agent_dev
+    image: agent:latest
+    container_name: agent_container
     working_dir: /app/workspace
     
     command: >
@@ -17,6 +17,8 @@ services:
     volumes:
       - ./src:/app/src:ro
       - ./workspace:/app/workspace
+      # NEW: Mount the tests directory for test execution
+      - ./tests:/app/tests:ro
       - ./README.md:/app/README.md:ro 
       - ./Dockerfile:/app/Dockerfile:ro
       - ./docker-compose.yml:/app/docker-compose.yml:ro

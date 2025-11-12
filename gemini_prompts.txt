@@ -24,6 +24,8 @@ When providing code, always provide the full file contents so that I can easily 
 Additionally, explain any file restructuring or command execution that is needed. 
 Provide concise explanations for all the changes.
 
+If a snapshot file is attached to this prompt, it means code has likely changed, review it so you know what you're working with.
+
 At the end of you response, include a list of the issues generated in the last Turn, minus the issues that were fixed or implemented.
 
 —----------------------------------
@@ -98,6 +100,11 @@ Your task is to examine the current automated tests in the repository and determ
 Consider code coverage, effectiveness, maintainability, extensibility, etc.
 If the current tests are sufficient, provide a positive affirmation.
 Otherwise, provide a list of up to 10 changes to make to improve the tests.
+
+Pay special attention to any code changes in recent Turns.
+If bugs were fixed, testing should be added that would catch similar bugs in the future, if possible.
+If features were added, testing should be added to test those features.
+If the code was refactored, testing should be refactored to match it, such as removing tests for features that have been removed.
 
 —----------------------------------
 MANUAL TEST
