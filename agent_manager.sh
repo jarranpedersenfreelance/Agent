@@ -46,15 +46,15 @@ function func_run_all_tests() {
     
     echo "--- Running Full Test Suite (/app/tests) ---"
     
-    # Execute ALL tests inside the container
-    docker exec "$CONTAINER_NAME" /usr/bin/python -m pytest /app/tests
+    # Generate JUnit XML report inside the mounted workspace/data directory
+    TEST_XML_PATH="/app/workspace/data/test_results.xml"
+    
+    # Execute ALL tests inside the container, generating the XML report
+    # Discard verbose text output to keep the console clean
+    docker exec "$CONTAINER_NAME" /usr/bin/python -m pytest /app/tests --junit-xml="$TEST_XML_PATH" > /dev/null 2>&1
     TEST_EXIT_CODE=$?
 
-    if [ "$TEST_EXIT_CODE" -eq 0 ]; then
-        echo "✅ Full test suite passed (Exit Code 0)."
-    else
-        echo "❌ Full test suite FAILED (Exit Code $TEST_EXIT_CODE)."
-    fi
+    # Pass the exit code back to func_test_deploy
     return $TEST_EXIT_CODE
 }
 
@@ -114,7 +114,16 @@ function func_test_deploy() {
     echo "--- TEST DEPLOYMENT START: $(date) ---"
     echo ""
 
-    # 1-4: Standard Deployment Setup (Cleanup, Copy, Enforce Immutability)
+    # Define the output file name
+    TEST_STATUS_YML="test_status.yml"
+    TEST_XML_FILE="workspace/data/test_results.xml"
+
+    # 1. Cleanup Logs
+    # Note: Assuming func_cleanup_output_files is defined elsewhere and clears workspace/data outputs
+    func_cleanup_output_files 
+    rm -f "$TEST_STATUS_YML" # Clear the final YML file from the host root
+    
+    # 2-4: Standard Deployment Setup (Cleanup, Copy, Enforce Immutability)
     echo "1. Ensuring clean container slate (stopping/removing any running/paused instance)..."
     docker-compose stop "$SERVICE_NAME" 2>/dev/null || true
     docker-compose rm -f "$SERVICE_NAME" 2>/dev/null || true
@@ -140,45 +149,126 @@ function func_test_deploy() {
     # Give the container a moment to start up
     sleep 2 
 
-    # 6. Run ALL Tests
+    # 6. Run ALL Tests (will generate test_results.xml in workspace/data)
     func_run_all_tests
     TEST_STATUS=$?
     
-    # 7. Stop and Remove Temporary Container
-    echo "7. Stopping and removing temporary test container..."
+    # 7. Post-Test Processing: Generate the structured test_status.yml if tests were run
+    if [ -f "$TEST_XML_FILE" ]; then
+        # This function executes a Python script in the container to convert XML to YML
+        func_create_test_status_yml
+    else
+        echo "⚠️ Warning: Test XML file was not generated or found. Cannot create structured report."
+    fi
+
+    # 8. Stop and Remove Temporary Container
+    echo "8. Stopping and removing temporary test container..."
     docker-compose stop "$SERVICE_NAME" 2>/dev/null || true
     docker-compose rm -f "$SERVICE_NAME" 2>/dev/null || true
     
+    # 9. Clean up temporary XML file if it exists
+    rm -f "$TEST_XML_FILE"
+
     # Final Report
     if [ "$TEST_STATUS" -eq 0 ]; then
         echo "✅ TEST DEPLOYMENT Complete: ALL TESTS PASSED."
     else
-        echo "❌ TEST DEPLOYMENT Complete: TESTS FAILED (Exit Code $TEST_STATUS)."
+        echo "❌ TEST DEPLOYMENT Complete: TESTS FAILED (Exit Code $TEST_STATUS). Review $TEST_STATUS_YML."
     fi
 
     echo "--- TEST DEPLOYMENT END: $(date) ---"
     return $TEST_STATUS
 }
 
+function func_create_test_status_yml() {
+    # This Python script is executed inside the container to process the XML
+    # and write the structured YAML report to the host's base directory (which is mounted).
+    
+    # NOTE: This script ASSUMES Python and required libraries (e.g., PyYAML) are available 
+    # in the container and the host's base directory is mounted to /app/workspace.
 
-function func_full_reset() {
-    echo "--- FULL RESET START: $(date) ---"
-    echo "1. Stopping container..."
-    docker-compose stop "$SERVICE_NAME" 2>/dev/null || true
+    # 1. Path definitions
+    CONTAINER_XML_PATH="/app/workspace/data/test_results.xml"
+    HOST_YML_PATH="test_status.yml"
+    
+    # 2. Python conversion script (executed via docker exec)
+    # This uses basic Python XML and YAML libraries (which may need to be installed)
+    echo "Running Python script in container to process XML into YAML..."
+    docker exec "$CONTAINER_NAME" /usr/bin/python -c "
+import xml.etree.ElementTree as ET
+import yaml
+import os
 
-    echo "2. Copying clean state from src/data/ to workspace/data/..."
-    # Ensure workspace/data exists
-    mkdir -p workspace/data
-    # Force copy ALL files from the source of truth for persistent data
-    cp -a -f src/data/. workspace/data/
+def parse_junit_xml_to_yaml(xml_path):
+    # Check if the XML file exists
+    if not os.path.exists(xml_path):
+        return {'status': 'FAILED', 'message': f'Test results XML not found at {xml_path}'}
+        
+    tree = ET.parse(xml_path)
+    root = tree.getroot()
+    test_suite = root.find('testsuite')
+    
+    if test_suite is None:
+        return {'status': 'FAILED', 'message': 'Invalid test results XML format.'}
 
-    echo "3. Restarting deployment..."
-    func_deploy
+    # Extract test status from the XML attributes
+    failures = int(test_suite.attrib.get('failures', 0))
+    errors = int(test_suite.attrib.get('errors', 0))
+    total_tests = int(test_suite.attrib.get('tests', 0))
+    
+    test_results = []
+    
+    for testcase in test_suite.findall('testcase'):
+        name = testcase.attrib.get('name', 'UNKNOWN')
+        classname = testcase.attrib.get('classname', 'UNKNOWN')
+        
+        test_data = {
+            'test': f'{classname}.{name}',
+            'status': 'PASSED',
+            'error_message': None
+        }
+        
+        # Check for failure/error tags
+        failure = testcase.find('failure')
+        error = testcase.find('error')
+        
+        if failure is not None:
+            test_data['status'] = 'FAILED'
+            test_data['error_message'] = failure.attrib.get('message', 'No message provided.')
+            test_data['details'] = failure.text.strip() if failure.text else 'No details.'
+        elif error is not None:
+            test_data['status'] = 'ERROR'
+            test_data['error_message'] = error.attrib.get('message', 'No message provided.')
+            test_data['details'] = error.text.strip() if error.text else 'No details.'
+        
+        test_results.append(test_data)
 
-    echo "✅ Full Reset Complete."
-    echo "--- FULL RESET END: $(date) ---"
+    output = {
+        'status': 'FAILED' if (failures + errors) > 0 else 'PASSED',
+        'summary': {
+            'total': total_tests,
+            'passed': total_tests - failures - errors,
+            'failed': failures + errors
+        },
+        'results': test_results
+    }
+    
+    # Write to a file in the workspace directory, which is mounted to the host
+    host_yml_path = os.path.join(os.path.abspath('/app/workspace/'), os.path.basename('$HOST_YML_PATH'))
+    with open(host_yml_path, 'w') as f:
+        yaml.dump(output, f, sort_keys=False)
+    
+    print(f'YAML report generated in container at {host_yml_path}')
+
+# Execute the main parsing function
+try:
+    import yaml
+except ImportError:
+    print('ERROR: PyYAML library is not installed in the container. Cannot generate YAML report.')
+    exit(1)
+parse_junit_xml_to_yaml('$CONTAINER_XML_PATH')
+    "
 }
-
 
 function func_snapshot() {
     echo "--- SNAPSHOT GENERATION START: $(date) ---"
@@ -232,15 +322,29 @@ function func_snapshot() {
     fi
 }
 
+function func_delete() {
+    read -r -p "⚠️ WARNING: This will stop and remove ALL containers, networks, volumes, and THE AGENT IMAGE (scion-agent:latest). Are you sure? (y/N): " response
+    case "$response" in
+        [yY][eE][sS]|[yY]) 
+            echo "Deleting all project resources..."
+            # Stops and removes containers, networks, volumes, and ALL images defined in docker-compose.yml
+            docker-compose down --rmi all
+            echo "Deletion complete. Environment is clean."
+            ;;
+        *)
+            echo "Deletion cancelled."
+            ;;
+    esac
+}
+
 function usage() {
     echo "Usage: ./agent_manager.sh <command>"
     echo ""
     echo "Commands:"
-    echo "  deploy          : Run a full deployment (code update, build, start) and run lightweight tests. (Replaces ./deploy)"
+    echo "  snapshot        : Generate the codebase_snapshot.txt file for context upload."
+    echo "  deploy          : Run a full deployment (code update, build, start) and run lightweight tests."
     echo "  test-deploy     : Run a full deployment setup, execute ALL tests, and cleanup the container. DOES NOT leave agent running."
-    echo "  full-reset      : Stop container, force copy ALL data/ files from src/data/, then start. (Replaces ./deploy_full_reset)"
-    echo "  task-reset      : Stop container, copy ONLY immediate_task.txt, then start. (Replaces ./deploy_reset)"
-    echo "  snapshot        : Generate the codebase_snapshot.txt file for context upload. (Replaces ./package)"
+    echo "  delete          : WARNING: Stops, removes containers, networks, volumes, AND THE AGENT IMAGE."
     echo ""
 }
 
@@ -259,29 +363,11 @@ case "$1" in
     test-deploy)
         func_test_deploy
         ;;
-    full-reset)
-        func_full_reset
-        ;;
-    task-reset)
-        echo "--- TASK RESET START: $(date) ---"
-        echo "1. Stopping container..."
-        docker-compose stop "$SERVICE_NAME" 2>/dev/null || true
-
-        echo "2. Copying immediate_task.txt to workspace/data/..."
-        # Ensure workspace/data exists
-        mkdir -p workspace/data
-        # Copy ONLY immediate_task.txt (and overwrite)
-        cp -f src/data/immediate_task.txt workspace/data/
-
-        echo "3. Restarting deployment..."
-        # Use deploy function for the clean start
-        func_deploy
-
-        echo "✅ Task Reset Complete."
-        echo "--- TASK RESET END: $(date) ---"
-        ;;
     snapshot)
         func_snapshot
+        ;;
+    delete)
+        func_delete
         ;;
     *)
         usage

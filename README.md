@@ -26,22 +26,16 @@ This is the **`workspace/`** directory, the Agent's mutable environment where al
 | **Operating Data** | Aligns with `src/data/` files. These are files that largely persist across deployments such as logs and state memory. These files may be manually changed or rolled back occasionally. All such files should exist as empty files in `src/data/`, with the Agent responsible for updating the list in its update proposals if it adds or removes operating files. | Read / Write |
 | **Temp** | These are files that the Agent downloads or creates for temporary use. They will be regularly deleted and not guaranteed to persist across deployments. | Read / Write / Execute |
 
-## II. Deployment & Update Protocol (Architectural Review)
-
-### Initial Deployment & Code Updates
-
-To start the Agent or deploy a code update after making changes to the `src/` files, execute the deploy script:
-
-./deploy
-
-This script will:
-1. Copy all necessary Framework/Core Logic files from the source directories into the `workspace/`.
-2. Rebuild and restart the Docker container with the new code.
-
-### Core Logic Updates (Architectural Review)
+### Architectural Review
 The Agent must submit a proposal for all changes to the Core Logic (files in `src/`):
 1.  **Agent Proposes:** The Agent logs an **ACTION PROPOSAL** targeting the file in the workspace (e.g., `core/agent_core.py`).
 2.  **Architect Implements:** The Architect manually copies the approved changes into the corresponding file in the local **`src/` directory**, editing if needed.
-3.  **Architect Deploys:** The Architect executes `./deploy` to synchronize the new source code to the Agent's environment.
+3.  **Architect Deploys:** The Architect deploys the new version of the Agent
 
 The Agent should ensure it includes all necessary changes in its update proposal, including core logic changes, secondary/execution logic changes, and changes to the data directory file structure. 
+
+## II. Deployment
+The agent_manager.sh file serves as a command line tool for the Architect to perform various deployment actions.
+1. **snapshot:** This creates the codebase_snapshot.txt file that serves as a source of truth for the current state of the codebase
+2. **deploy:** This deploys and runs the Agent in a docker container
+3. **test-deploy:** This deploys the Agent with the express purpose of automated testing

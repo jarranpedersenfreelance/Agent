@@ -17,7 +17,6 @@ services:
     volumes:
       - ./src:/app/src:ro
       - ./workspace:/app/workspace
-      # NEW: Mount the tests directory for test execution
       - ./tests:/app/tests:ro
       - ./README.md:/app/README.md:ro 
       - ./Dockerfile:/app/Dockerfile:ro
