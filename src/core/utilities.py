@@ -64,6 +64,20 @@ def read_text_file(file_path: str) -> str:
     with open(file_path, 'r', encoding='utf-8') as f:
         return f.read()
 
+def load_file_content(file_path: str, default_content: Union[str, None] = None) -> str:
+    """
+    Loads text content from a file, returning default content or an error message 
+    if the file is not found.
+    """
+    try:
+        # Use existing utility function which raises FileNotFoundError
+        return read_text_file(file_path)
+    except FileNotFoundError:
+        if default_content is not None:
+            return default_content
+        else:
+            return f"Error: File not found at path: {file_path}"
+
 def write_text_file(file_path: str, content: str):
     """Writes content to a text file, creating directories if necessary."""
     os.makedirs(os.path.dirname(file_path), exist_ok=True)

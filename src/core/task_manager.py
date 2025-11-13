@@ -1,85 +1,59 @@
 # src/core/task_manager.py
 import os
-from typing import Dict, Any, List
+import json # FIX: Added missing import for json.JSONDecodeError
+from typing import Any, Dict, Union
 from .utilities import json_load, json_dump
 
+# --- Task Manager ---
+
 class TaskManager:
-    """
-    Manages the queue of actions/tasks for the agent.
-    """
+    """Manages the current task and the queue of actions for the agent."""
+    
+    def __init__(self, constants: Dict[str, Any]):
+        self.constants = constants
+        self.queue_file = os.path.join(
+            "workspace", self.constants['FILE_PATHS']['ACTION_QUEUE_FILE']
+        )
+        self.current_task = self.constants['AGENT']['STARTING_TASK']
+        self._load_state()
 
-    def __init__(self, constants: Dict[str, Any] = None):
-        
-        # FIX: Updated to access structured constants (Issue 10)
-        file_paths = constants.get('FILE_PATHS', {})
-        agent_config = constants.get('AGENT', {})
-
-        if file_paths and file_paths.get('ACTION_QUEUE_FILE'):
-            self.queue_path = file_paths['ACTION_QUEUE_FILE']
-        else:
-            self.queue_path = "workspace/data/action_queue.json"
-        
-        self.action_queue: List[Dict[str, Any]] = self._load_queue()
-        
-        # FIX: Issue 7 - Uses STARTING_TASK constant and manages current_task state
-        self.current_task = agent_config.get('STARTING_TASK', "Begin self-improvement cycle.")
-
-
-    # --- Task Queue Persistence ---
-
-    def _load_queue(self) -> List[Dict[str, Any]]:
-        """
-        FIX: Issue 1 - Loads the action queue from a JSON file.
-        """
-        if not os.path.exists(self.queue_path):
-            return []
+    def _load_state(self):
+        """Loads the action queue from disk."""
         try:
-            return json_load(self.queue_path)
-        except Exception as e:
-            print(f"Warning: Failed to load action queue from {self.queue_path}: {e}")
-            return []
+            # Load action queue
+            self.action_queue = json_load(self.queue_file)
+        except (FileNotFoundError, json.JSONDecodeError):
+            self.action_queue = []
+        
+        # NOTE: current_task is set during init and is not persistent here
+        self._save_state()
 
-    def _save_queue(self):
-        """
-        FIX: Issue 1 - Saves the current action queue state to the JSON file.
-        """
-        try:
-            json_dump(self.action_queue, self.queue_path)
-        except Exception as e:
-            print(f"ERROR: Failed to save action queue to {self.queue_path}: {e}")
-
-    # --- Task Queue Management ---
-
-    def enqueue_action(self, action_dict: Dict[str, Any]):
-        """
-        FIX: Issue 1 - Adds an action dictionary to the end of the queue.
-        Action dict format should be ready for execution (e.g., {'action': 'READ_FILE', 'parameters': {...}})
-        """
-        self.action_queue.append(action_dict)
-        self._save_queue()
-
-    def dequeue_action(self) -> Union[Dict[str, Any], None]:
-        """
-        FIX: Issue 1 - Removes and returns the next action dictionary from the front of the queue.
-        """
-        if not self.action_queue:
-            return None
-        action = self.action_queue.pop(0)
-        self._save_queue()
-        return action
-
-    def has_pending_actions(self) -> bool:
-        """Checks if there are any actions currently in the queue."""
-        return len(self.action_queue) > 0
-
-    def get_current_task(self) -> str:
-        """Returns the current high-level task the agent is working on."""
-        return self.current_task
+    def _save_state(self):
+        """Saves the action queue to disk."""
+        json_dump(self.action_queue, self.queue_file)
 
     def update_current_task(self, new_task: str):
-        """Updates the agent's current task based on its latest reasoning."""
+        """Updates the agent's current task."""
         self.current_task = new_task
-        # Note: Task persistence is handled through the MemoryManager/ActionLog, 
-        # not the TaskManager's save state.
+        # Note: current_task is not persisted, relying on memory manager/LLM context
 
-    # TODO: Implement Issue 8 - parse_action_from_response(raw_text)
+    def get_current_task(self) -> str:
+        """Returns the agent's current task."""
+        return self.current_task
+
+    def enqueue_action(self, action: Dict[str, Any]):
+        """Adds an action dict to the end of the queue."""
+        self.action_queue.append(action)
+        self._save_state()
+
+    def dequeue_action(self) -> Union[Dict[str, Any], None]:
+        """Removes and returns the next action from the front of the queue (FIFO)."""
+        if self.action_queue:
+            action = self.action_queue.pop(0)
+            self._save_state()
+            return action
+        return None
+
+    def has_pending_actions(self) -> bool:
+        """Returns True if the action queue is not empty."""
+        return len(self.action_queue) > 0
