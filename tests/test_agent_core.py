@@ -1,101 +1,105 @@
 # tests/test_agent_core.py
-import pytest
-import os
-import signal
-from unittest.mock import patch, MagicMock
-from src.core.agent_core import AgentCore, load_constants, load_agent_principles
-from src.core.utilities import yaml_safe_dump, write_text_file
+import unittest
+from unittest.mock import MagicMock, patch, call
+from src.core.agent_core import AgentCore
+from src.core.models import Action
 
-# Define paths relative to the test file location for testing utility functions
-TEST_CONSTANTS_PATH = "test_agent_constants.yaml"
-TEST_PRINCIPLES_PATH = "test_agent_principles.txt"
+# Mock constants needed for initialization
+MOCK_CONSTANTS = {
+    'FILE_PATHS': {
+        'AGENT_PRINCIPLES_FILE': 'agent_principles.txt',
+        'ACTION_SYNTAX_FILE': 'action_syntax.txt'
+    },
+    'AGENT': {
+        'LOOP_SLEEP_SECONDS': 0,
+        'STARTING_TASK': 'Initial project analysis task'
+    }
+}
 
-# Utility to create a mock YAML constants file
-def setup_mock_constants_file(path, content):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    yaml_safe_dump(content, path)
+class TestAgentCore(unittest.TestCase):
 
-# Utility to create a mock text principles file
-def setup_mock_principles_file(path, content):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    write_text_file(path, content)
+    @patch('src.core.agent_core.read_text_file', return_value='content')
+    @patch('src.core.agent_core.ResourceManager')
+    @patch('src.core.agent_core.MemoryManager')
+    @patch('src.core.agent_core.TaskManager')
+    @patch('src.core.agent_core.ReasoningIntegration')
+    def setUp(self, MockRI, MockTM, MockMM, MockRM, MockRTF):
+        # Prevent the sleep call from blocking tests
+        self.patcher_sleep = patch('src.core.agent_core.time.sleep')
+        self.mock_sleep = self.patcher_sleep.start()
+        
+        # Setup Mocks
+        self.mock_tm = MockTM.return_value
+        self.mock_ri = MockRI.return_value
+        
+        # The agent relies on its ActionHandler. The handler needs a mocked Action.
+        # Default side_effect: process one action then stop (unless overridden by specific tests)
+        self.mock_action = MagicMock(spec=Action)
+        self.mock_tm.dequeue_action.side_effect = [self.mock_action, None]
 
-# --- Test Cases for Utility Functions ---
+        # Initialize the core
+        self.agent = AgentCore(MOCK_CONSTANTS)
 
-def test_load_constants_success(tmp_path, mock_constants):
-    """Tests successful loading of structured constants."""
-    constants_path = tmp_path / TEST_CONSTANTS_PATH
-    setup_mock_constants_file(str(constants_path), mock_constants)
-    
-    loaded_constants = load_constants(str(constants_path))
-    
-    # FIX: Issue 9 coverage - check for structured return, not flattened
-    assert loaded_constants == mock_constants
-    assert 'API' in loaded_constants
-    assert loaded_constants['AGENT']['MAX_REASONING_STEPS'] == 100
+    def tearDown(self):
+        self.patcher_sleep.stop()
 
-def test_load_constants_file_not_found(tmp_path):
-    """Tests graceful exit on missing constants file."""
-    with pytest.raises(SystemExit):
-        load_constants(str(tmp_path / "nonexistent.yaml"))
+    def test_agent_core_initialization(self):
+        self.assertTrue(hasattr(self.agent, 'memory_manager'))
+        self.assertTrue(hasattr(self.agent, 'resource_manager'))
+        self.assertTrue(hasattr(self.agent, 'task_manager'))
+        self.assertTrue(hasattr(self.agent, 'action_handler'))
+        self.assertTrue(hasattr(self.agent, 'reasoning_integration'))
+        self.assertEqual(self.agent.agent_principles, 'content')
+        self.assertEqual(self.agent.action_syntax, 'content')
 
-# FIX: Issue 8 Coverage - New Test for principles loading
-def test_load_agent_principles_success(tmp_path):
-    """Tests successful loading of agent principles."""
-    principles_path = tmp_path / TEST_PRINCIPLES_PATH
-    mock_content = "Focus on the goal. Be concise."
-    setup_mock_principles_file(str(principles_path), mock_content)
-    
-    loaded_principles = load_agent_principles(str(principles_path))
-    assert loaded_principles == mock_content
+    @patch('src.core.agent_core.read_text_file', side_effect=FileNotFoundError)
+    @patch('src.core.agent_core.ResourceManager')
+    @patch('src.core.agent_core.MemoryManager')
+    @patch('src.core.agent_core.TaskManager')
+    @patch('src.core.agent_core.ReasoningIntegration')
+    def test_load_principles_file_not_found(self, MockRI, MockTM, MockMM, MockRM, MockRTF):
+        with self.assertRaises(FileNotFoundError):
+            AgentCore(MOCK_CONSTANTS)
 
-def test_load_agent_principles_file_not_found(tmp_path):
-    """Tests graceful exit on missing principles file."""
-    with pytest.raises(SystemExit):
-        load_agent_principles(str(tmp_path / "nonexistent.txt"))
-
-# --- Test Cases for AgentCore Class ---
-
-@patch('src.core.agent_core.load_constants')
-@patch('src.core.agent_core.load_agent_principles')
-@patch('src.core.agent_core.ResourceManager')
-@patch('src.core.agent_core.MemoryManager')
-@patch('src.core.agent_core.TaskManager')
-@patch('src.core.agent_core.ActionHandler')
-def test_agent_core_initialization(
-    MockActionHandler, 
-    MockTaskManager, 
-    MockMemoryManager, 
-    MockResourceManager, 
-    mock_load_principles, 
-    mock_load_constants,
-    mock_constants # Use the shared mock constants for consistency
-):
-    """
-    Tests that AgentCore initializes all managers correctly with structured constants.
-    (Issue 9 coverage)
-    """
-    mock_load_constants.return_value = mock_constants
-    mock_load_principles.return_value = "Test Principles."
-    
-    # Initialize AgentCore
-    core = AgentCore()
-
-    # Assert managers are initialized with the full, structured constants
-    # This confirms the removal of the constant flattening logic.
-    MockResourceManager.assert_called_once_with(mock_constants)
-    MockMemoryManager.assert_called_once_with(mock_constants)
-    MockTaskManager.assert_called_once_with(mock_constants)
-    
-    # Assert ActionHandler is initialized with managers and constants
-    MockActionHandler.assert_called_once_with(
-        mock_constants, 
-        MockMemoryManager(), 
-        MockResourceManager(), 
-        MockTaskManager()
-    )
-
-    # Assert internal constant access is correct
-    assert core.AGENT_CONSTANTS == mock_constants['AGENT']
-    assert core.FILE_CONSTANTS == mock_constants['FILE_PATHS']
-    assert core.principles == "Test Principles."
+    @patch('src.core.agent_core.ActionHandler')
+    def test_agent_run_loop_execution(self, MockAH):
+        # The default side_effect set in setUp processes one action then stops.
+        self.mock_tm.is_queue_empty.return_value = False # Queue is not empty for standard run
+        self.agent.run()
+        
+        # Assert one action was dequeued and handled
+        self.mock_tm.dequeue_action.assert_called()
+        MockAH.return_value.handle_action.assert_called_once_with(self.mock_action)
+        
+        # Assert the loop was exited correctly
+        self.assertEqual(self.mock_tm.dequeue_action.call_count, 2)
+        self.mock_sleep.assert_called_once()
+        
+    @patch('src.core.agent_core.ActionHandler')
+    def test_agent_core_initialization_populates_queue(self, MockAH):
+        """Tests that a clean start (empty queue) is populated with a REASON action."""
+        
+        # 1. Setup TaskManager to report empty queue
+        self.mock_tm.is_queue_empty.return_value = True
+        
+        # 2. Setup the loop to stop after the initial action is added and dequeued
+        initial_reason_action = Action(
+            type="REASON",
+            payload={"task": MOCK_CONSTANTS['AGENT']['STARTING_TASK']}
+        )
+        # Sequence: Initial check (empty), then dequeuing the action that was just added, then None.
+        self.mock_tm.dequeue_action.side_effect = [initial_reason_action, None]
+        
+        # 3. Run the agent
+        self.agent.run()
+        
+        # 4. Assert initial action was created and added to the queue
+        self.mock_tm.add_action.assert_called_once()
+        
+        # Check the type and payload of the action passed to add_action
+        added_action = self.mock_tm.add_action.call_args[0][0]
+        self.assertEqual(added_action.type, "REASON")
+        self.assertEqual(added_action.payload['task'], MOCK_CONSTANTS['AGENT']['STARTING_TASK'])
+        
+        # 5. Assert the newly added action was immediately dequeued and handled
+        MockAH.return_value.handle_action.assert_called_once()

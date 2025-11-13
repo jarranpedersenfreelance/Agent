@@ -1,73 +1,92 @@
-import pytest
-from pathlib import Path
+# tests/test_utilities.py
+import unittest
+import os
+import shutil
 import json
 import yaml
 from src.core import utilities
-import os
 
-# --- UTILITIES TESTS ---
-
-def test_write_and_read_text_file(tmp_path: Path):
-    """Tests writing content to a file and reading it back."""
-    test_path = tmp_path / "test.txt"
-    test_content = "This is a test file content.\nLine two."
+class TestUtilities(unittest.TestCase):
     
-    # Write
-    utilities.write_text_file(str(test_path), test_content)
-    assert test_path.is_file()
+    def setUp(self):
+        # Create a temporary directory for testing file I/O
+        self.temp_dir = 'temp_test_data'
+        os.makedirs(self.temp_dir, exist_ok=True)
+        self.test_file_path = os.path.join(self.temp_dir, 'test_file.txt')
+        self.test_json_path = os.path.join(self.temp_dir, 'test_data.json')
+        self.test_yaml_path = os.path.join(self.temp_dir, 'test_data.yaml')
+        
+    def tearDown(self):
+        # Clean up the temporary directory
+        if os.path.exists(self.temp_dir):
+            shutil.rmtree(self.temp_dir)
 
-    # Read
-    # The snapshot's load_file_content strips content, so we ensure comparison also accounts for that.
-    read_content = utilities.load_file_content(str(test_path))
-    assert read_content.strip() == test_content.strip()
+    # --- File I/O Tests (read_text_file / write_text_file) ---
 
-def test_load_nonexistent_file_with_default():
-    """Tests loading a non-existent file returns the default content."""
-    default = "default content"
-    content = utilities.load_file_content("nonexistent_file.txt", default_content=default)
-    assert content == default
+    def test_write_and_read_text_file(self):
+        """Tests that content written can be read back accurately."""
+        test_content = "Hello, Scion Agent!"
+        utilities.write_text_file(self.test_file_path, test_content)
+        read_content = utilities.read_text_file(self.test_file_path)
+        self.assertEqual(read_content, test_content)
+        
+    def test_read_nonexistent_file_with_default(self):
+        """Tests reading a non-existent file returns the default content."""
+        default = "default content"
+        # FIX: Changed load_file_content to read_text_file
+        content = utilities.read_text_file(self.test_file_path, default_content=default)
+        self.assertEqual(content, default)
 
-def test_load_nonexistent_file_without_default():
-    """Tests loading a non-existent file returns the standard error message."""
-    # Based on the snapshot's utility code, it returns an error string
-    content = utilities.load_file_content("nonexistent_file.txt")
-    assert content.startswith("Error: File not found")
-
-def test_yaml_safe_dump_and_load(tmp_path: Path):
-    """Tests dumping a dictionary to YAML and loading it back."""
-    test_path = tmp_path / "test.yaml"
-    test_data = {
-        "name": "Test Config",
-        "settings": {"key": 42, "enabled": True}
-    }
+    def test_read_nonexistent_file_without_default(self):
+        """Tests reading a non-existent file raises FileNotFoundError."""
+        # FIX: Changed load_file_content to read_text_file and ensured it raises FileNotFoundError
+        with self.assertRaises(FileNotFoundError):
+            utilities.read_text_file(self.test_file_path)
     
-    # Dump
-    utilities.yaml_safe_dump(test_data, str(test_path))
-    assert test_path.is_file()
+    # --- JSON I/O Tests ---
 
-    # Load
-    loaded_data = utilities.yaml_safe_load(str(test_path))
-    assert loaded_data == test_data
+    def test_json_dump_and_load(self):
+        """Tests that a dictionary can be saved and loaded as JSON."""
+        test_data = {'key': 'value', 'number': 123}
+        utilities.json_dump(test_data, self.test_json_path)
+        loaded_data = utilities.json_load(self.test_json_path)
+        self.assertEqual(loaded_data, test_data)
 
-def test_json_dump_and_load(tmp_path: Path):
-    """Tests dumping a dictionary to JSON and loading it back."""
-    test_path = tmp_path / "test.json"
-    test_data = {"id": 1, "status": "active"}
+    def test_json_load_nonexistent_file(self):
+        """Tests loading a non-existent JSON file returns an empty dictionary."""
+        loaded_data = utilities.json_load("nonexistent.json")
+        self.assertEqual(loaded_data, {})
+        
+    def test_json_load_malformed_file(self):
+        """Tests loading a malformed JSON file returns an empty dictionary."""
+        with open(self.test_json_path, 'w') as f:
+            f.write("{'key': 'value'") # Malformed JSON
+        loaded_data = utilities.json_load(self.test_json_path)
+        self.assertEqual(loaded_data, {})
 
-    # Dump
-    utilities.json_dump(test_data, str(test_path))
-    assert test_path.is_file()
+    # --- YAML I/O Tests ---
 
-    # Load
-    loaded_data = utilities.json_load(str(test_path))
-    assert loaded_data == test_data
+    def test_yaml_safe_dump_and_load(self):
+        """Tests that data can be saved and loaded as YAML safely."""
+        test_data = {'list': [1, 2, 'a'], 'bool': True}
+        utilities.yaml_safe_dump(test_data, self.test_yaml_path)
+        loaded_data = utilities.yaml_safe_load(self.test_yaml_path)
+        self.assertEqual(loaded_data, test_data)
 
-def test_json_load_nonexistent_file():
-    """Tests loading a non-existent JSON file raises FileNotFoundError."""
-    with pytest.raises(FileNotFoundError):
-        utilities.json_load("nonexistent_file.json")
+    def test_yaml_load_nonexistent_file(self):
+        """Tests loading a non-existent YAML file returns an empty dictionary."""
+        loaded_data = utilities.yaml_safe_load("nonexistent.yaml")
+        self.assertEqual(loaded_data, {})
 
-def test_yaml_load_nonexistent_file():
-    """Tests loading a non-existent YAML file raises FileNotFoundError."""
-    with pytest.raises(FileNotFoundError):
-        utilities.yaml_safe_load("nonexistent_file.yaml")
+    # --- Other Utility Tests ---
+
+    def test_sanitize_filename_cleans_path(self):
+        """Tests that file paths are cleaned of directory traversal components."""
+        unsafe_path = "../../../etc/passwd"
+        safe_path = "etcpasswd"
+        self.assertEqual(utilities.sanitize_filename(unsafe_path), safe_path)
+        
+        # Test paths with slashes
+        complex_path = "src/core/../config.yaml"
+        # Since it only cleans directory components, it just removes slashes and dots
+        self.assertEqual(utilities.sanitize_filename(complex_path), "srccoreconfigyaml")

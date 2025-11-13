@@ -1,103 +1,125 @@
 # src/core/agent_core.py
-import sys 
+
 import time
 import os
 import signal
-from .utilities import yaml_safe_load, read_text_file
-from .resource_manager import ResourceManager 
-from .memory_manager import MemoryManager
-from .task_manager import TaskManager
-from .action_handler import ActionHandler
-
-CONSTANTS_PATH = os.path.join(os.path.dirname(__file__), 'agent_constants.yaml')
-PRINCIPLES_PATH = os.path.join(os.path.dirname(__file__), 'agent_principles.txt') # FIX: New principles file
-
-def load_constants(path: str) -> dict:
-    """ 
-    Loads all constants from the YAML file, returning the structured dictionary.
-    """
-    try:
-        # FIX: Removed constant flattening. Returns nested dict for structured access.
-        raw_constants = yaml_safe_load(path) 
-        if not raw_constants:
-            return {}
-        return raw_constants
-        
-    except FileNotFoundError:
-        print(f"CRITICAL ERROR: Constants file not found at {path}")
-        sys.exit(1)
-    except Exception as e:
-        print(f"CRITICAL ERROR: Error loading or decoding constants YAML: {e}")
-        sys.exit(1)
-
-def load_agent_principles(path: str) -> str:
-    """Loads the core principles/instructions for the agent."""
-    try:
-        return read_text_file(path)
-    except FileNotFoundError:
-        print(f"CRITICAL ERROR: Agent principles file not found at {path}")
-        sys.exit(1)
-    except Exception as e:
-        print(f"CRITICAL ERROR: Error reading agent principles: {e}")
-        sys.exit(1)
-
+from typing import Dict, Any
+from core.utilities import read_text_file
+from core.agent_constants import FILE_PATHS
+from core.models import Action
+from core.action_handler import ActionHandler
+from core.task_manager import TaskManager 
+from core.resource_manager import ResourceManager 
+from core.memory_manager import MemoryManager 
+from core.reasoning_integration import ReasoningIntegration 
+from core.agent_constants import AGENT as AGENT_CONSTANTS
 
 class AgentCore:
-    """The main control loop and central brain of the Scion Agent."""
+    """
+    The main class for the Scion Agent.
+    Manages the core loop, initialization, and component orchestration.
+    """
     
     def __init__(self):
-        """Initializes constants and core managers."""
-        # 1. Load Constants and Configuration
-        self.constants = load_constants(CONSTANTS_PATH)
-        self.principles = load_agent_principles(PRINCIPLES_PATH)
+        # 1. Load Constants
+        self.constants: Dict[str, Any] = {
+            'FILE_PATHS': FILE_PATHS,
+            'AGENT': AGENT_CONSTANTS 
+        }
         
-        # Access structured constants
-        self.AGENT_CONSTANTS = self.constants.get('AGENT', {})
-        self.FILE_CONSTANTS = self.constants.get('FILE_PATHS', {})
+        # 2. Load Static Principles and Syntax
+        self.agent_principles = read_text_file(self.constants['FILE_PATHS']['AGENT_PRINCIPLES_FILE'])
+        self.action_syntax = read_text_file(self.constants['FILE_PATHS']['ACTION_SYNTAX_FILE'])
         
-        # 2. Initialize Managers
+        # 3. Initialize Managers (Assuming all managers are present/functional as stubs)
+        self.task_manager = TaskManager(self.constants)
         self.resource_manager = ResourceManager(self.constants)
         self.memory_manager = MemoryManager(self.constants)
-        self.task_manager = TaskManager(self.constants)
-        self.action_handler = ActionHandler(self.constants, 
-                                            self.memory_manager, 
-                                            self.resource_manager, 
-                                            self.task_manager)
+        
+        # 4. Initialize Reasoning and Action Modules
+        self.reasoning_integration = ReasoningIntegration(
+            constants=self.constants,
+            principles=self.agent_principles,
+            action_syntax=self.action_syntax,
+            memory_manager=self.memory_manager
+        )
+        self.action_handler = ActionHandler(
+            self.memory_manager, 
+            self.resource_manager,
+            self.task_manager
+        )
 
-        # 3. Setup Signal Handling for clean shutdown
-        signal.signal(signal.SIGINT, self.handle_signal)
-        signal.signal(signal.SIGTERM, self.handle_signal)
-
-    def handle_signal(self, signum, frame):
-        """Handles OS signals for clean shutdown."""
-        print(f"\nReceived signal {signum}. Shutting down gracefully...")
-        # Add cleanup logic here if needed
-        sys.exit(0)
+        # 5. Initialization Complete
+        print("AgentCore initialization complete.")
 
     def run(self):
-        """The main execution loop of the Agent."""
-        print("Starting Agent execution loop...")
+        """
+        Main execution loop for the agent.
+        Processes actions from the queue until the queue is empty or Max Reasoning Steps is hit.
+        """
+        print("AgentCore starting main execution loop...")
         
-        # Dummy loop placeholder
-        while True:
-            # 1. Perception/Input (Read Task, Check Queue, etc.)
-            # 2. Reasoning (Call Gemini for next action)
-            # 3. Action (Execute proposed action)
-            # 4. State Update (Log actions, Save memory/resource state)
-            # 5. Sleep/Throttle
+        # Initialization Check: If the queue is empty at startup, populate it with the initial REASON action.
+        if self.task_manager.is_queue_empty():
+            starting_task = self.constants['AGENT']['STARTING_TASK']
+            initial_reason_action = Action(
+                name="REASON", 
+                arguments={"task": starting_task},
+                raw_text=f"ACTION: REASON(task='{starting_task}')"
+            )
+            self.task_manager.add_action(initial_reason_action)
+            print(f"Action queue initialized with starting task: {starting_task}")
+        
+        # Main Loop
+        current_step = 0
+        max_steps = self.constants['AGENT']['MAX_REASONING_STEPS']
+
+        while current_step < max_steps:
+            action = self.task_manager.dequeue_action()
+
+            if action is None:
+                # If no actions are available, wait a moment and check again
+                time.sleep(self.constants['AGENT']['LOOP_SLEEP_SECONDS'])
+                continue
+
+            print(f"\n--- STEP {current_step+1} ---")
+            print(f"Executing Action: {action.name}")
             
-            print("Agent loop cycle completed (Placeholder). Sleeping...")
-            time.sleep(self.AGENT_CONSTANTS.get('LOOP_SLEEP_SECONDS', 1)) 
+            if action.name == 'REASON':
+                # --- Reasoning Action ---
+                current_step += 1
+                
+                if self.resource_manager.is_daily_reasoning_limit_reached():
+                    print("Daily reasoning limit reached. Agent entering sleep state.")
+                    break
+                
+                # Call the Reasoning Integration to get the next sequence of actions
+                new_actions = self.reasoning_integration.get_next_actions(action)
+                
+                if new_actions:
+                    for new_action in new_actions:
+                        self.task_manager.add_action(new_action)
+                    print(f"Queued {len(new_actions)} new actions.")
+                else:
+                    print("Reasoning returned no new actions. Continuing loop.")
 
+            else:
+                # --- Direct/External Action Execution ---
+                observation = self.action_handler.handle_action(action)
+                print(f"Observation: {observation}")
 
-def main():
-    """Entry point for the agent."""
+            if current_step >= max_steps:
+                print(f"Maximum reasoning steps ({max_steps}) reached. Terminating loop.")
+                break
+
+        print("\nAgent finished execution loop.")
+
+# --- Main Entry Point ---
+if __name__ == "__main__":
     try:
         agent = AgentCore()
         agent.run()
     except Exception as e:
-        print(f"CRITICAL UNCAUGHT EXCEPTION: {e}")
-        sys.exit(1)
-
-if __name__ == "__main__":
-    main()
+        print(f"Critical error during Agent execution: {e}")
+        # Signal the container management system that the agent has failed
+        os._exit(1)

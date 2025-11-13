@@ -1,5 +1,9 @@
-# FILE PATHS: Used by various managers to locate state/data files
+# src/core/agent_constants.yaml
+# Configuration constants for the Agent
+
 FILE_PATHS:
+    AGENT_PRINCIPLES_FILE: "src/core/agent_principles.txt" # Path to the agent's core principles
+    ACTION_SYNTAX_FILE: "src/core/action_syntax.txt"     # Path to the action syntax definitions
     ACTION_QUEUE_FILE: "data/action_queue.json"
     MEMORY_STREAM_FILE: "data/memory_stream.json"
     RESOURCES_STATE_FILE: "data/resource_state.yaml"
