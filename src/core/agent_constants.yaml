@@ -1,22 +1,24 @@
+# src/core/agent_constants.yaml
 FILE_PATHS:
-    ROOT: "./"
-    SRC: "src/"
-    DATA: "src/data/"
-    CORE: "src/core/"
     ACTION_LOG_FILE: "data/action_log.txt"
     MEMORY_STREAM_FILE: "data/memory_stream.json"
     ACTION_QUEUE_FILE: "data/action_queue.json"
     IMMEDIATE_TASK_FILE: "data/immediate_task.txt"
+    # Immutable Core Files (Per User Request)
     GOAL_FILE: "core/goal.txt"
     REASONING_PRINCIPLES_FILE: "core/reasoning_principles.txt"
+    # FIX: Issue 5 - New file for persistent resource state
     RESOURCES_STATE_FILE: "data/resource_state.yaml"
 
 API:
     MODEL: "gemini-2.5-flash"
-    DAILY_QUOTA: 100 # Example quota of 100 calls per day
+    # FIX: Issue 5 - New Rate Limiting Constants
+    RPM_LIMIT: 1000        # Requests Per Minute
+    TPM_LIMIT: 1000000     # Tokens Per Minute
+    RPD_LIMIT: 10000       # Requests Per Day
 
 AGENT:
     LOOP_SLEEP_SECONDS: 0.5 # Default sleep time between cycles (allows tight loop while preventing CPU exhaustion)
-    MAX_REASONING_STEPS: 100
+    MAX_REASONING_STEPS: 100 # FIX: Issue 8 - Maximum number of reasoning calls before termination
     DEPLOYED_FLAG: False # Flag for initial deployment check
-    CONTEXT_TRUNCATION_LIMIT: 500
+    CONTEXT_TRUNCATION_LIMIT: 500 # FIX: Issue 7 - Max length of context history in MemoryStream

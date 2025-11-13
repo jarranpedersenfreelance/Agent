@@ -6,21 +6,26 @@ services:
     container_name: agent_container
     working_dir: /app/workspace
     
-    command: >
-      /bin/sh -c "
-      echo 'Workspace ready. Starting Agent.' &&
-      PYTHONPATH=/app/workspace python3 core/agent_core.py
-      "
+    # FIX: Replaced "c" with "-c" to correctly pass the command string to the shell.
+    command: ["/bin/sh", "-c", "echo 'Workspace ready. Starting Agent.' && PYTHONPATH=/app/workspace python3 -m core.agent_core"]
       
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
     volumes:
+      # --- Source Code and Core Logic (Read-Only) ---
       - ./src:/app/src:ro
+      - ./tests:/app/tests:ro 
+      
+      # --- Agent State/Output (Read/Write) ---
       - ./workspace:/app/workspace
-      - ./tests:/app/tests:ro
+      
+      # --- Base Directory Files (Read-Only) ---
+      - ./.gitignore:/app/.gitignore:ro
       - ./README.md:/app/README.md:ro 
       - ./Dockerfile:/app/Dockerfile:ro
       - ./docker-compose.yml:/app/docker-compose.yml:ro
-      - ./deploy:/app/deploy:ro
       - ./requirements.txt:/app/requirements.txt:ro
+      - ./agent_manager.sh:/app/agent_manager.sh:ro
+      - ./gemini_prompts.txt:/app/gemini_prompts.txt:ro
+      
     restart: unless-stopped

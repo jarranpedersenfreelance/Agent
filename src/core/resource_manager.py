@@ -1,53 +1,55 @@
-from datetime import date
-from . import agent_constants as constants
-from typing import Dict, Any
+import os
+# REMOVED: import yaml
+# FIX: Changed to relative import (from .utilities) and corrected 'load_yaml' to 'yaml_load'.
+from .utilities import yaml_load, yaml_dump
 
 class ResourceManager:
-    """Manages the agent's mutable state and resources."""
-
-    def __init__(self):
-        self.last_run_date = date.today()
-        self.daily_reasoning_count = constants.AGENT.MAX_REASONING_STEPS
-        self.is_terminated = False
-
-    def _check_and_reset_daily_resources(self):
-        """Resets daily resources if the last run date was yesterday or earlier."""
-        today = date.today()
-        if today > self.last_run_date:
-            self.last_run_date = today
-            self.daily_reasoning_count = constants.AGENT.MAX_REASONING_STEPS
-
-    def can_reason(self) -> bool:
-        """Checks if the agent can perform a reasoning step."""
-        self._check_and_reset_daily_resources()
-        if self.daily_reasoning_count <= 0:
-            self.is_terminated = True
-            return False
-        return True
-
-    def record_reasoning_step(self):
-        """Decrements the reasoning count."""
-        if self.can_reason():
-            self.daily_reasoning_count -= 1
+    def __init__(self, constants):
+        """Initializes the Resource Manager."""
+        self.constants = constants
         
-    def to_dict(self) -> Dict[str, Any]:
-        """Returns the state of the resource manager as a dictionary for persistence."""
-        return {
-            "last_run_date": self.last_run_date.isoformat(),
-            "daily_reasoning_count": self.daily_reasoning_count,
-            "is_terminated": self.is_terminated,
-        }
+        # State file path
+        self.state_file_path = self.constants['RESOURCES_STATE_FILE']
+        
+        # Initialize or load state
+        self.resources = self._load_state()
 
-    def from_dict(self, data: dict):
-        """Loads the state of the resource manager from a dictionary."""
-        if not data:
-            return
+    def _load_state(self):
+        """Loads the resource state from the YAML file, or returns a default structure."""
+        try:
+            # FIX: Changed load_yaml to the correct function name yaml_load
+            state = yaml_load(self.state_file_path)
+            if state is None:
+                # Handle empty file case
+                return {}
+            return state
+        except FileNotFoundError:
+            print(f"INFO: Resource state file not found at {self.state_file_path}. Initializing with empty state.")
+            return {}
+        except Exception as e:
+            print(f"ERROR: Failed to load resource state from {self.state_file_path}: {e}")
+            return {}
+
+    def _save_state(self):
+        """Saves the current resource state to the YAML file."""
+        try:
+            yaml_dump(self.resources, self.state_file_path)
+        except Exception as e:
+            print(f"ERROR: Failed to save resource state to {self.state_file_path}: {e}")
             
-        if "last_run_date" in data:
-            self.last_run_date = date.fromisoformat(data["last_run_date"])
-        if "daily_reasoning_count" in data:
-            self.daily_reasoning_count = data["daily_reasoning_count"]
-        if "is_terminated" in data:
-            self.is_terminated = data["is_terminated"]
+    # --- Public Methods for Resource Management ---
+    
+    def get_resource(self, key):
+        """Retrieves a resource value by key."""
+        return self.resources.get(key)
 
-        self._check_and_reset_daily_resources()
+    def set_resource(self, key, value):
+        """Sets a resource value by key and saves the state."""
+        self.resources[key] = value
+        self._save_state()
+
+    def clear_state(self):
+        """Clears the entire resource state (for development resets)."""
+        self.resources = {}
+        self._save_state()
+        print("INFO: Resource state has been cleared.")

@@ -1,5 +1,9 @@
 This file defines prompt formats to send to Gemini manually.
-All prompts expect the codebase_snapshot.txt file to be included as an accompaning file.
+Most prompts expect the codebase_snapshot.txt file to be included as an accompaning file.
+
+—----------------------------------
+CORE LOGIC
+—----------------------------------
 
 —----------------------------------
 RESCAN
@@ -32,10 +36,11 @@ At the end of you response, include a list of the issues generated in the last T
 DEBUG
 —----------------------------------
 
-Scan the provided file to understand the code repository for the project.
+Scan the snapshot file attached to the prompt to understand the code repository for the project.
 Pay special attention to the README file to keep the project specifications in mind.
 
 Your task is to determine areas where there are bugs, flawed logic, or missing code.
+If additonal files with errors in them are provided attached to the prompt, prioritize fixing those bugs.
 
 You are to provide a list of up to 10 issues.
 Try to provide the full 10, only providing less if you truly feel there aren't that many issues.
@@ -49,7 +54,7 @@ Pay special attention to the README file to keep the project specifications in m
 
 Your task is to determine areas where there are unnecessary comments or code, or bloat that should be cut.
 Additionally, identify actions that can be taken to refactor the code to be cleaner, more readable, or better layed out.
-Keep in mind that python modules should be 300 lines or less, with few exceptions (exceptions should have a comment marking them).
+Keep in mind that python modules and shell scripts should be 300 lines or less, with few exceptions (exceptions should have a comment marking them).
 Try to reduce the size of the entire project as much as you can while retaining functionality, readability, and best coding practices.
 
 You are to provide a list of up to 10 issues.

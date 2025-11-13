@@ -1,4 +1,4 @@
 .env
 codebase_snapshot.txt
-test_status.yml
+test_results.xml
 workspace/

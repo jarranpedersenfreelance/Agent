@@ -1,58 +1,51 @@
+# src/core/memory_manager.py
 import os
-from typing import List, Dict, Any, Optional
-
-from . import agent_constants as constants
-from .utilities import json_safe_load, json_safe_dump
+from typing import Dict, List # FIX: Added typing imports
+from .utilities import json_load, json_dump
+from .models import MemoryStream
+from .constants import FILE_PATHS, AGENT
 
 class MemoryManager:
-    """Manages the agent's long-term memory, including known files and plans."""
+    def __init__(self, constants):
+        self.constants = constants
+        self.memory_path = FILE_PATHS.MEMORY_STREAM_FILE
+        self.stream = self._load_stream()
 
-    DEFAULT_MEMORY_SCHEMA: Dict[str, Any] = {
-        "known_files": [],
-        "development_plan": "Determine best next step of growth based on current goals, codebase, and resources. Self-Update to achieve this growth, and then iterate.",
-        "read_files": {}, # Optional: Store file contents read
-    }
+    def _load_stream(self) -> MemoryStream:
+        """Loads the memory stream from a file, initializing if the file is missing or corrupt."""
+        if os.path.exists(self.memory_path):
+            try:
+                data = json_load(self.memory_path)
+                return MemoryStream.parse_obj(data)
+            except (FileNotFoundError, ValueError, AttributeError, KeyError) as e:
+                print(f"Warning: Could not load memory stream file ({e}). Initializing default memory.")
+                return MemoryStream()
+        else:
+            return MemoryStream()
 
-    def __init__(self, agent_root: str = constants.FILE_PATHS.ROOT):
-        self.agent_root = agent_root
+    def _save_stream(self):
+        """Saves the current memory stream to the JSON file."""
+        data = self.stream.dict()
+        json_dump(data, self.memory_path)
         
-        self.mem_path = os.path.join(self.agent_root, constants.FILE_PATHS.MEMORY_STREAM_FILE)
-        self.memory = self._load_memory()
-
-    def _load_memory(self) -> Dict[str, Any]:
-        """Loads the memory stream from its JSON file, applying a default schema."""
-        data = json_safe_load(self.mem_path)
-        
-        # Merge loaded data over the default schema (Issue 5)
-        memory_state = self.DEFAULT_MEMORY_SCHEMA.copy()
-        memory_state.update(data)
-            
-        return memory_state
-
-    def _save_memory(self):
-        """Saves the current memory state to the JSON file."""
-        json_safe_dump(self.mem_path, self.memory)
-
-    def update_known_files(self, new_files: List[str], deleted_files: List[str]):
+    def add_context(self, role: str, message: str):
         """
-        Updates the list of known files in memory.
+        Adds a new message to the context history and truncates if necessary.
+        (Issue 7)
         """
-        known_files = set(self.memory.get("known_files", []))
+        entry = {"role": role, "message": message}
+        self.stream.context_history.append(entry)
         
-        for f in new_files:
-            known_files.add(f)
+        # Truncate history based on configured limit (simple length-based truncation)
+        max_limit = AGENT.CONTEXT_TRUNCATION_LIMIT
+        if len(self.stream.context_history) > max_limit:
+            # Keep the most recent messages
+            self.stream.context_history = self.stream.context_history[-max_limit:]
             
-        for f in deleted_files:
-            known_files.discard(f)
-
-        self.memory["known_files"] = sorted(list(known_files))
-        self._save_memory()
-
-    def get_known_files(self) -> List[str]:
-        """Returns the list of known files."""
-        return self.memory.get("known_files", [])
-
-    def update_plan(self, plan: str):
-        """Updates the development plan in memory."""
-        self.memory["development_plan"] = plan
-        self._save_memory()
+        self._save_stream()
+        
+    def get_context(self) -> List[Dict[str, str]]:
+        """Returns the current context history for use in the LLM call."""
+        return self.stream.context_history
+    
+    # Placeholder for other memory methods (e.g., adding read files, known files)
