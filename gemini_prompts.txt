@@ -6,83 +6,16 @@ CORE LOGIC
 —----------------------------------
 
 —----------------------------------
-RESCAN
-—----------------------------------
-
-Forget everything you know about the codebase and past versions of it.
-Scan the provided file to understand the code repository for the project.
-Pay special attention to the README file to keep the project specifications in mind.
-
-Update your memory so that we can discuss code improvements in future Turns.
-
-—----------------------------------
-IMPLEMENT LIST
-—----------------------------------
-
-In the last Turn you generated a list of issues to work on for the project.
-
-Your task is to implement as many fixes/features from the list that you can in one Turn.
-Make sure the solutions are quality, do not sacrifice quality for quantity of solutions.
-Directly provide the changed code that implements your solutions.
-When providing code, always provide the full file contents so that I can easily update them with a copy paste.
-Additionally, explain any file restructuring or command execution that is needed. 
-Provide concise explanations for all the changes.
-
-If a snapshot file is attached to this prompt, it means code has likely changed, review it so you know what you're working with.
-
-At the end of you response, include a list of the issues generated in the last Turn, minus the issues that were fixed or implemented.
-
-—----------------------------------
-DEBUG
-—----------------------------------
-
-Scan the snapshot file attached to the prompt to understand the code repository for the project.
-Pay special attention to the README file to keep the project specifications in mind.
-
-Your task is to determine areas where there are bugs, flawed logic, or missing code.
-If additonal files with errors in them are provided attached to the prompt, prioritize fixing those bugs.
-
-You are to provide a list of up to 10 issues.
-Try to provide the full 10, only providing less if you truly feel there aren't that many issues.
-
-—----------------------------------
-REFACTOR
-—----------------------------------
-
-Scan the provided file to understand the code repository for the project.
-Pay special attention to the README file to keep the project specifications in mind.
-
-Your task is to determine areas where there are unnecessary comments or code, or bloat that should be cut.
-Additionally, identify actions that can be taken to refactor the code to be cleaner, more readable, or better layed out.
-Keep in mind that python modules and shell scripts should be 300 lines or less, with few exceptions (exceptions should have a comment marking them).
-Try to reduce the size of the entire project as much as you can while retaining functionality, readability, and best coding practices.
-
-You are to provide a list of up to 10 issues.
-Try to provide the full 10, only providing less if you truly feel there aren't that many issues.
-
-—----------------------------------
-TASKING
-—----------------------------------
-
-Scan the provided file to understand the code repository for the project.
-Pay special attention to the README file to keep the project specifications in mind.
-
-Your task is to determine features that should be added based on the stated purpose of the project and our previous conversations.
-Determine the most critical missing features, and list them from most critical to least.
-
-You are to provide a list of up to 10 issues.
-Try to provide the full 10, only providing less if you truly feel there aren't that many features to add.
-
-—----------------------------------
 IMPLEMENT
 —----------------------------------
 
-Scan the provided file to understand the code repository for the project.
+Use codebase_snapshot.txt to understand the code repository for the project.
 Pay special attention to the README file to keep the project specifications in mind.
 
 Your task is to implement the feature outlined below.
+Ensure all proposed changes strictly adhere to your current CORE LOGIC principles, particularly the rule against removing existing functionality.
 If the feature is something you can implement in one Turn, directly provide the changed code.
-When providing code, always provide the full file contents so that I can easily update them with a copy paste.
+When providing code, you **MUST** use the following format for each file: `### 💾 FILE: ./path/to/file.py (COMPLETE CONTENTS)` followed immediately by a language-labeled, backticked code block containing the full file contents. This ensures I can easily update files with a copy-paste.
 Additionally, explain any file restructuring or command execution that is needed. 
 Provide concise explanations for all the changes.
 
@@ -92,13 +25,47 @@ When providing a list of sub features, don't provide more than five.
 
 FEATURE:
 
-{Replace With Feature Description}
+{None}
 
 —----------------------------------
-UPDATE TESTS
+DEBUG
 —----------------------------------
 
-Scan the provided file to understand the code repository for the project.
+Use codebase_snapshot.txt to understand the code repository for the project.
+Pay special attention to the README file to keep the project specifications in mind.
+
+Your task is to debug the project based on the logs/errors provided below.
+Ensure all proposed changes strictly adhere to your current CORE LOGIC principles, particularly the rule against removing existing functionality.
+When providing code, you **MUST** use the following format for each file: `### 💾 FILE: ./path/to/file.py (COMPLETE CONTENTS)` followed immediately by a language-labeled, backticked code block containing the full file contents. This ensures I can easily update files with a copy-paste.
+Additionally, explain any file restructuring or command execution that is needed. 
+Provide concise explanations for all the changes.
+
+LOGS/ERROR:
+
+{None}
+
+—----------------------------------
+REVIEW CODE
+—----------------------------------
+
+Use codebase_snapshot.txt to understand the code repository for the project.
+Pay special attention to the README file to keep the project specifications in mind.
+
+Your task is to review the code in the repository and provide a list of up to 10 changes to make to improve the code.
+Consider: maintainability, extensibility, readability, performance, style, etc.
+Prioritize fixing bugs or flawed logic that you identify.
+
+If notes are provide below, focus on those aspects of code review.
+
+NOTES:
+
+{None}
+
+—----------------------------------
+REVIEW TESTS
+—----------------------------------
+
+Use codebase_snapshot.txt to understand the code repository for the project.
 Pay special attention to the README file to keep the project specifications in mind.
 
 Your task is to examine the current automated tests in the repository and determine whether they are sufficient.
@@ -111,13 +78,48 @@ If bugs were fixed, testing should be added that would catch similar bugs in the
 If features were added, testing should be added to test those features.
 If the code was refactored, testing should be refactored to match it, such as removing tests for features that have been removed.
 
+If notes are provide below, focus on those aspects of testing.
+
+NOTES:
+
+{None}
+
+—----------------------------------
+IMPLEMENT LIST
+—----------------------------------
+
+Use codebase_snapshot.txt to understand the code repository for the project.
+Pay special attention to the README file to keep the project specifications in mind.
+
+In a recent code or test review, you generated a list of issues to work on for the project.
+Your task is to implement as many fixes/features from the list that you can in one Turn.
+Make sure the solutions are quality, do not sacrifice quality for quantity of solutions.
+
+Directly provide the changed code that implements your solutions.
+Ensure all proposed changes strictly adhere to your current CORE LOGIC principles, particularly the rule against removing existing functionality.
+When providing code, you **MUST** use the following format for each file: `### 💾 FILE: ./path/to/file.py (COMPLETE CONTENTS)` followed immediately by a language-labeled, backticked code block containing the full file contents. This ensures I can easily update files with a copy-paste.
+Additionally, explain any file restructuring or command execution that is needed. 
+Provide concise explanations for all the changes.
+
+If additional notes are given below, make sure to follow them as they may say to ignore certain issues or implement them in a certain way.
+At the end of your response, include a list of the remaining issues you haven't fixed, minus those you're told to ignore in the notes below.
+
+NOTES:
+
+{None}
+
 —----------------------------------
 MANUAL TEST
 —----------------------------------
 
-Scan the provided file to understand the code repository for the project.
+Use codebase_snapshot.txt to understand the code repository for the project.
 Pay special attention to the README file to keep the project specifications in mind.
 
 Your task is to provide up to 3 manual tests to run to verify the code is working as expected.
 These should check things not covered by the automatic tests that run on project deployment.
 
+If notes are provide below, focus on those aspects of testing.
+
+NOTES:
+
+{None}
