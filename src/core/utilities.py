@@ -1,71 +1,83 @@
 # src/core/utilities.py
+import os
 import json
 import yaml
-import os
-from typing import Any, Dict, List, Union # FIX: Added typing imports for clarity and NameError prevention
+from typing import Any, Dict, List, Union
 
-def json_dump(data: Union[Dict, List], path: str) -> None:
-    """Dumps a Python object to a JSON file."""
-    try:
-        with open(path, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=4)
-    except IOError as e:
-        raise IOError(f"Error dumping JSON data to file '{path}': {e}") from e
+# --- YAML Utility Functions (Re-implemented for safety and correctness) ---
 
-def json_load(path: str) -> Union[Dict, List]:
-    """Loads data from a JSON file. Raises FileNotFoundError if the file is missing."""
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"JSON file not found: {path}")
-    try:
-        with open(path, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except json.JSONDecodeError as e:
-        raise ValueError(f"Error decoding JSON from file '{path}': {e}") from e
-    except IOError as e:
-        raise IOError(f"Error loading JSON data from file '{path}': {e}") from e
+def yaml_safe_load(file_path: str) -> Union[Dict[str, Any], List[Any]]:
+    """
+    Safely loads YAML content from a file.
+    
+    Args:
+        file_path: The path to the YAML file.
+    
+    Returns:
+        The deserialized Python object (dict or list).
+    
+    Raises:
+        FileNotFoundError: If the file does not exist.
+    """
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"YAML file not found: {file_path}")
+    
+    with open(file_path, 'r', encoding='utf-8') as f:
+        # Use safe_load to prevent arbitrary code execution
+        return yaml.safe_load(f)
 
-def yaml_dump(data: Any, path: str) -> None:
-    """Dumps a Python object to a YAML file."""
-    try:
-        with open(path, 'w', encoding='utf-8') as f:
-            yaml.dump(data, f, sort_keys=False)
-    except IOError as e:
-        raise IOError(f"Error dumping YAML data to file '{path}': {e}") from e
+def yaml_safe_dump(data: Any, file_path: str):
+    """
+    Safely dumps a Python object to a YAML file.
+    
+    Args:
+        data: The Python object to serialize.
+        file_path: The path to the output YAML file.
+    """
+    # Ensure the directory exists before writing
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    
+    with open(file_path, 'w', encoding='utf-8') as f:
+        # Use default_flow_style=False for better readability
+        yaml.safe_dump(data, f, default_flow_style=False)
 
-def yaml_load(path: str) -> Any:
-    """Loads data from a YAML file. Raises FileNotFoundError if the file is missing."""
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"YAML file not found: {path}")
-    try:
-        with open(path, 'r', encoding='utf-8') as f:
-            return yaml.safe_load(f)
-    except yaml.YAMLError as e:
-        raise ValueError(f"Error decoding YAML from file '{path}': {e}") from e
-    except IOError as e:
-        raise IOError(f"Error loading YAML data from file '{path}': {e}") from e
 
-def read_text_file(path: str) -> str:
-    """Reads content from a plain text file. Raises FileNotFoundError if the file is missing."""
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"Text file not found: {path}")
-    try:
-        with open(path, 'r', encoding='utf-8') as f:
-            return f.read()
-    except IOError as e:
-        raise IOError(f"Error reading text file '{path}': {e}") from e
+# --- JSON Utility Functions ---
 
-def write_text_file(path: str, content: str) -> None:
-    """Writes content to a plain text file."""
-    try:
-        with open(path, 'w', encoding='utf-8') as f:
-            f.write(content)
-    except IOError as e:
-        raise IOError(f"Error writing text file to '{path}': {e}") from e
+def json_load(file_path: str) -> Union[Dict[str, Any], List[Any]]:
+    """Loads content from a JSON file."""
+    with open(file_path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+def json_dump(data: Any, file_path: str):
+    """Dumps content to a JSON file."""
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    with open(file_path, 'w', encoding='utf-8') as f:
+        # Use indent=4 for human-readable output
+        json.dump(data, f, indent=4)
+
+
+# --- File I/O Utility Functions ---
+
+def read_text_file(file_path: str) -> str:
+    """Reads the entire content of a text file."""
+    with open(file_path, 'r', encoding='utf-8') as f:
+        return f.read()
+
+def write_text_file(file_path: str, content: str):
+    """Writes content to a text file, creating directories if necessary."""
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    with open(file_path, 'w', encoding='utf-8') as f:
+        f.write(content)
+
+def delete_file(file_path: str):
+    """Deletes a file if it exists."""
+    if os.path.exists(file_path):
+        os.remove(file_path)
 
 def sanitize_filename(filename: str) -> str:
-    """Strips common path traversal and non-portable characters from a filename."""
-    # This is a basic sanitizer
-    filename = filename.strip()
-    filename = filename.replace('../', '').replace('./', '')
-    filename = filename.replace('/', os.sep).replace('\\', os.sep)
-    return filename
+    """Removes or replaces characters that are unsafe or illegal in filenames."""
+    # Simple replacement of common bad characters
+    safe_name = filename.replace('..', '__').replace('/', '_').replace('\\', '_')
+    # Further sanitation can be added here if needed (e.g., restricting length)
+    return safe_name

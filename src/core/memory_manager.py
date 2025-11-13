@@ -1,51 +1,72 @@
 # src/core/memory_manager.py
 import os
-from typing import Dict, List # FIX: Added typing imports
+import json
+from typing import Dict, Any, Union
 from .utilities import json_load, json_dump
-from .models import MemoryStream
-from .constants import FILE_PATHS, AGENT
 
 class MemoryManager:
-    def __init__(self, constants):
-        self.constants = constants
-        self.memory_path = FILE_PATHS.MEMORY_STREAM_FILE
-        self.stream = self._load_stream()
+    """
+    Manages the persistent memory stream for the Agent, which includes known files, 
+    the development plan, and recently read file contents.
+    """
 
-    def _load_stream(self) -> MemoryStream:
-        """Loads the memory stream from a file, initializing if the file is missing or corrupt."""
-        if os.path.exists(self.memory_path):
-            try:
-                data = json_load(self.memory_path)
-                return MemoryStream.parse_obj(data)
-            except (FileNotFoundError, ValueError, AttributeError, KeyError) as e:
-                print(f"Warning: Could not load memory stream file ({e}). Initializing default memory.")
-                return MemoryStream()
+    def __init__(self, constants: Dict[str, Any] = None):
+        
+        # FIX: Updated to access structured constants (Issue 10)
+        file_paths = constants.get('FILE_PATHS', {})
+        agent_config = constants.get('AGENT', {})
+
+        if file_paths and file_paths.get('MEMORY_STREAM_FILE'):
+            self.stream_path = file_paths['MEMORY_STREAM_FILE']
         else:
-            return MemoryStream()
+            self.stream_path = "workspace/data/memory_stream.json"
+            
+        self.context_limit = agent_config.get('CONTEXT_TRUNCATION_LIMIT', 500)
+            
+        self.memory_stream = self._load_stream()
+
+    def _load_stream(self) -> Dict[str, Any]:
+        """Loads the memory stream from a JSON file, handling errors."""
+        try:
+            return json_load(self.stream_path)
+        except FileNotFoundError:
+            # Return default initial state
+            return {
+                "read_files": {},
+                "development_plan": "Determine best next step of growth based on current goals, codebase, and resources. Self-Update to achieve this growth, and then iterate.",
+                "known_files": []
+            }
+        except Exception as e:
+            print(f"Warning: Failed to load memory stream from {self.stream_path}: {e}")
+            return {} # Return empty dict on severe error
 
     def _save_stream(self):
-        """Saves the current memory stream to the JSON file."""
-        data = self.stream.dict()
-        json_dump(data, self.memory_path)
-        
-    def add_context(self, role: str, message: str):
+        """Saves the current memory stream state to the JSON file."""
+        try:
+            json_dump(self.memory_stream, self.stream_path)
+        except Exception as e:
+            print(f"ERROR: Failed to save memory stream to {self.stream_path}: {e}")
+
+    def update_read_files(self, file_path: str, content: str):
         """
-        Adds a new message to the context history and truncates if necessary.
-        (Issue 7)
+        FIX: Issue 5 - Updates the read_files dictionary, truncating content if necessary.
         """
-        entry = {"role": role, "message": message}
-        self.stream.context_history.append(entry)
-        
-        # Truncate history based on configured limit (simple length-based truncation)
-        max_limit = AGENT.CONTEXT_TRUNCATION_LIMIT
-        if len(self.stream.context_history) > max_limit:
-            # Keep the most recent messages
-            self.stream.context_history = self.stream.context_history[-max_limit:]
-            
+        # Apply truncation limit to the content
+        if len(content) > self.context_limit:
+            content = content[:self.context_limit] + "..." # Truncate and indicate truncation
+
+        self.memory_stream['read_files'][file_path] = content
         self._save_stream()
-        
-    def get_context(self) -> List[Dict[str, str]]:
-        """Returns the current context history for use in the LLM call."""
-        return self.stream.context_history
-    
-    # Placeholder for other memory methods (e.g., adding read files, known files)
+
+    def get_read_files_context(self) -> Dict[str, str]:
+        """Returns the dictionary of recently read files and their (potentially truncated) content."""
+        return self.memory_stream.get('read_files', {})
+
+    def get_development_plan(self) -> str:
+        """Returns the current long-term development plan."""
+        return self.memory_stream.get('development_plan', "")
+
+    def update_development_plan(self, new_plan: str):
+        """Sets a new long-term development plan."""
+        self.memory_stream['development_plan'] = new_plan
+        self._save_stream()

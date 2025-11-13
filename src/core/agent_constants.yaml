@@ -1,13 +1,7 @@
-# src/core/agent_constants.yaml
+# FILE PATHS: Used by various managers to locate state/data files
 FILE_PATHS:
-    ACTION_LOG_FILE: "data/action_log.txt"
-    MEMORY_STREAM_FILE: "data/memory_stream.json"
     ACTION_QUEUE_FILE: "data/action_queue.json"
-    IMMEDIATE_TASK_FILE: "data/immediate_task.txt"
-    # Immutable Core Files (Per User Request)
-    GOAL_FILE: "core/goal.txt"
-    REASONING_PRINCIPLES_FILE: "core/reasoning_principles.txt"
-    # FIX: Issue 5 - New file for persistent resource state
+    MEMORY_STREAM_FILE: "data/memory_stream.json"
     RESOURCES_STATE_FILE: "data/resource_state.yaml"
 
 API:
@@ -22,3 +16,4 @@ AGENT:
     MAX_REASONING_STEPS: 100 # FIX: Issue 8 - Maximum number of reasoning calls before termination
     DEPLOYED_FLAG: False # Flag for initial deployment check
     CONTEXT_TRUNCATION_LIMIT: 500 # FIX: Issue 7 - Max length of context history in MemoryStream
+    STARTING_TASK: "Analyze the current codebase snapshot to determine the next best growth step for the Scion Agent."

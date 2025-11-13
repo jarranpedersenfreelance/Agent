@@ -1,85 +1,69 @@
 # src/core/action_handler.py
-from typing import Dict, Any # FIX: Added typing imports
-from .resource_manager import ResourceManager
-from .memory_manager import MemoryManager
-from .task_manager import TaskManager
-from .utilities import read_text_file, write_text_file, sanitize_filename
-from .constants import FILE_PATHS
+import os 
+from .models import Action
+from .utilities import read_text_file, write_text_file, delete_file, sanitize_filename
 
 class ActionHandler:
-    def __init__(self, managers: Dict[str, Any]):
-        self.resource_manager: ResourceManager = managers['resource_manager']
-        self.memory_manager: MemoryManager = managers['memory_manager']
-        self.task_manager: TaskManager = managers['task_manager']
-        
-    def execute_action(self, action: str, parameters: Dict[str, str]) -> str:
-        """Routes and executes the requested action."""
-        
-        if action == 'read_file':
-            return self._read_file(parameters)
-        elif action == 'write_file':
-            return self._write_file(parameters)
-        elif action == 'agent_set_goals':
-            return self._agent_set_goals(parameters)
-        elif action == 'exit_and_finish':
-            return self._exit_and_finish(parameters)
-        
-        return f"Error: Unknown action '{action}'. Action not executed. Ensure the action name is correct and supported."
+    # BUG 1 FIX: Updated signature to accept all managers and constants.
+    def __init__(self, constants, memory_manager, resource_manager, task_manager):
+        """Initializes the Action Handler with core components."""
+        self.constants = constants
+        self.memory_manager = memory_manager
+        self.resource_manager = resource_manager
+        self.task_manager = task_manager
+        # Base directory for all file operations (set to CWD, which is /app/workspace in the container)
+        self.base_dir = os.path.abspath(os.getcwd()) # Use abspath for consistency
 
-    def _read_file(self, parameters: Dict[str, str]) -> str:
-        """Reads the content of a file. (Fixes Issue 4 error format)"""
-        path = parameters.get('path', '').strip()
+    def execute_action(self, action: Action) -> str:
+        """
+        Executes the requested action and returns a text result.
+        """
+        action_type = action.action.upper()
         
-        if not path:
-            return "Error: The 'read_file' action requires a 'path' parameter."
+        if action_type == "READ_FILE":
+            return self.handle_read_file(action)
+        # TODO: Add other action handlers here (WRITE_FILE, DELETE_FILE, etc.)
         
-        sanitized_path = sanitize_filename(path)
-        
-        try:
-            content = read_text_file(sanitized_path)
+        return f"Error: Unknown action type '{action_type}'. Please specify a valid action from the action_syntax.txt file."
+
+    def _resolve_path(self, file_path: str) -> str:
+        """
+        FIX: Issue 9 - Resolves the file path relative to the agent's base directory.
+        """
+        # Ensure the path is relative to the base directory, then resolve it to an absolute path
+        # Note: os.path.join handles absolute paths in file_path correctly by ignoring base_dir
+        # but we need to ensure the final path is consistently prefixed if it's relative.
+        if not os.path.isabs(file_path):
+            file_path = os.path.join(self.base_dir, file_path)
             
-            # Return content in the expected format (Issue 4 fix)
-            return (
-                f"File content:\n"
-                f"--- START {sanitized_path} ---\n"
-                f"{content}\n"
-                f"--- END {sanitized_path} ---"
-            )
+        return file_path
+
+
+    def handle_read_file(self, action: Action) -> str:
+        """
+        Handles the READ_FILE action.
+        """
+        file_path_raw = action.parameters.get('file_path')
+        if not file_path_raw:
+            return "Error: READ_FILE requires 'file_path' parameter."
+
+        # FIX: Use internal path resolver (Issue 9)
+        file_path = self._resolve_path(file_path_raw)
+
+        # The ResourceManager handles path safety checks (Issue 4)
+        if not self.resource_manager.is_file_path_safe(file_path):
+            return f"Error: File path '{file_path_raw}' is unsafe or outside the allowed scope."
+
+        try:
+            content = read_text_file(file_path)
+            
+            # Record in memory (Issue 5)
+            self.memory_manager.update_read_files(file_path_raw, content) # Save the raw path for cleaner memory context
+            
+            return f"File content:\n--- {file_path_raw} ---\n{content}\n---"
         except FileNotFoundError:
-            # Return standardized error message
-            return f"Error: File '{sanitized_path}' not found."
+            return f"Error: File '{file_path_raw}' not found."
         except Exception as e:
-            return f"Error: Failed to read file '{sanitized_path}': {e}"
+            return f"Error: Failed to read file '{file_path_raw}': {e}"
 
-    def _write_file(self, parameters: Dict[str, str]) -> str:
-        """Writes content to a file."""
-        path = parameters.get('path', '').strip()
-        content = parameters.get('content', '')
-        
-        if not path:
-            return "Error: The 'write_file' action requires both 'path' and 'content' parameters."
-        
-        sanitized_path = sanitize_filename(path)
-        
-        try:
-            write_text_file(sanitized_path, content)
-            return f"Success: File '{sanitized_path}' written successfully."
-        except Exception as e:
-            return f"Error: Failed to write to file '{sanitized_path}': {e}"
-            
-    def _agent_set_goals(self, parameters: Dict[str, str]) -> str:
-        """
-        Allows the agent to update its immediate task based on its reasoning.
-        (Issue 9 Modification)
-        """
-        new_task = parameters.get('new_task', '').strip()
-        
-        if not new_task:
-            return "Error: The 'agent_set_goals' action requires a 'new_task' parameter."
-        
-        return self.task_manager.write_immediate_task(new_task)
-
-    def _exit_and_finish(self, parameters: Dict[str, str]) -> str:
-        """Tells the agent to finish its current task and exit the loop."""
-        reason = parameters.get('reason', 'Goal achieved or unachievable.')
-        return f"FINISH SIGNAL: The agent is exiting the loop. Reason: {reason}"
+    # TODO: Other action handler methods (e.g., handle_write_file, handle_delete_file) would be here

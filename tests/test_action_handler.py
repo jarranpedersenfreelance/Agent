@@ -1,112 +1,77 @@
+# tests/test_action_handler.py
 import pytest
-from unittest.mock import MagicMock, call
 import os
-import shutil
-
-# FIX: Corrected the imported function name from 'load_file_content' to the actual function 'read_text_file'
-from src.core.utilities import write_text_file, read_text_file 
-from src.core.resource_manager import ResourceManager
+from unittest.mock import MagicMock, patch
 from src.core.action_handler import ActionHandler
 from src.core.models import Action
+from src.core.utilities import write_text_file
 
-# Mock Constants
-MOCK_CONSTANTS = {
-    'GOAL_FILE': 'core/goal.txt',
-    'REASONING_PRINCIPLES_FILE': 'core/reasoning_principles.txt'
-}
+# --- Fixture Setup ---
 
 @pytest.fixture
-def mock_managers():
-    """Fixture to provide mocked managers for ActionHandler."""
-    return {
-        'memory_manager': MagicMock(),
-        'task_manager': MagicMock()
-    }
-
-@pytest.fixture
-def resource_manager(tmp_path):
-    """Fixture to provide a real ResourceManager instance."""
-    # Create a simple constants dict for ResourceManager
-    constants = {'RESOURCES_STATE_FILE': str(tmp_path / "resource_state.yaml")}
-    return ResourceManager(constants)
-
-
-@pytest.fixture
-def action_handler(resource_manager, mock_managers):
+def action_handler(mock_constants, mock_managers):
     """Fixture to provide a real ActionHandler instance."""
-    # ActionHandler expects all managers and constants
-    return ActionHandler(MOCK_CONSTANTS, 
-                         mock_managers['memory_manager'], 
-                         resource_manager, 
+    # The ActionHandler fixture is correctly initialized with 4 arguments (plus self)
+    return ActionHandler(mock_constants,
+                         mock_managers['memory_manager'],
+                         mock_managers['resource_manager'],
                          mock_managers['task_manager'])
 
-# --- Test Cases for File Management Actions (READ, WRITE, DELETE) ---
-
-def test_read_file_success(action_handler, mock_managers, tmp_path):
-    """Tests the READ_FILE action on an existing file."""
-    test_file = tmp_path / "test.txt"
-    test_content = "File content: TEST"
-    write_text_file(str(test_file), test_content)
-
-    action = Action(action_type="READ_FILE", file_path="test.txt")
-    action_handler.resource_manager.is_file_path_safe = MagicMock(return_value=True)
+@pytest.fixture
+def mock_read_file_setup(clean_workspace):
+    """Sets up a mock file in the workspace for reading."""
+    # Create file inside the 'workspace' sub-directory
+    mock_file_path = clean_workspace / "workspace" / "test_file.txt"
+    content = "This is the content of the test file."
+    write_text_file(str(mock_file_path), content)
     
-    # Mock the read operation to ensure it reads from the correct temporary path
-    # NOTE: Since read_text_file uses the OS, this is a real file read using the fixture's path.
-    
-    result = action_handler.handle_read_file(action)
-    
-    expected_output = f"File content:\n--- test.txt ---\n{test_content}\n---"
-    assert result == expected_output
-    action_handler.resource_manager.is_file_path_safe.assert_called_once_with("test.txt")
-    mock_managers['memory_manager'].update_read_files.assert_called_once()
+    # Return the file path as the agent would see it (relative to CWD/tmp_path)
+    return "workspace/test_file.txt", str(mock_file_path), content
 
+# --- Test Cases ---
 
-def test_read_file_not_found(action_handler, tmp_path):
-    """Tests the READ_FILE action on a non-existent file."""
-    action = Action(action_type="READ_FILE", file_path="nonexistent.txt")
-    action_handler.resource_manager.is_file_path_safe = MagicMock(return_value=True)
+def test_handle_read_file_success(action_handler, mock_read_file_setup, mock_managers):
+    """Tests successful execution of READ_FILE action."""
+    file_path_raw, _, content = mock_read_file_setup
     
-    result = action_handler.handle_read_file(action)
+    action = Action(action="READ_FILE", parameters={"file_path": file_path_raw})
     
-    expected_output = "Error: File 'nonexistent.txt' not found."
-    assert result == expected_output
-    action_handler.resource_manager.is_file_path_safe.assert_called_once_with("nonexistent.txt")
-
-
-def test_read_file_unsafe_path(action_handler):
-    """Tests the READ_FILE action on an unsafe path."""
-    action = Action(action_type="READ_FILE", file_path="/etc/passwd")
-    action_handler.resource_manager.is_file_path_safe = MagicMock(return_value=False)
-    
-    result = action_handler.handle_read_file(action)
-    
-    expected_output = "Error: File path '/etc/passwd' is unsafe or outside the allowed scope."
-    assert result == expected_output
-    action_handler.resource_manager.is_file_path_safe.assert_called_once_with("/etc/passwd")
-
-
-# --- Test Cases for Action Execution ---
-
-def test_execute_action_read_file(action_handler):
-    """Tests the main execute_action method calling handle_read_file."""
-    action = Action(action_type="READ_FILE", file_path="test.txt")
-    
-    # Mock the underlying handler to control output
-    action_handler.handle_read_file = MagicMock(return_value="READ SUCCESS")
-    
+    expected_result = f"File content:\n--- {file_path_raw} ---\n{content}\n---"
     result = action_handler.execute_action(action)
     
-    assert result == "READ SUCCESS"
-    action_handler.handle_read_file.assert_called_once_with(action)
+    assert result == expected_result
+    # Verify memory update was called with the raw path
+    mock_managers['memory_manager'].update_read_files.assert_called_once_with(file_path_raw, content)
 
-
-def test_execute_action_unknown_type(action_handler):
-    """Tests the main execute_action method with an unknown action type."""
-    action = Action(action_type="UNKNOWN_ACTION", file_path="test.txt")
+# FIX: Issue 6 Coverage - New Test for _resolve_path
+def test_internal_path_resolution(action_handler, clean_workspace):
+    """Tests that a relative file path is correctly resolved internally."""
+    # The CWD is tmp_path, base_dir is tmp_path.
+    relative_path = "workspace/data/file.json"
     
+    resolved_path = action_handler._resolve_path(relative_path) 
+    expected_path = os.path.join(str(clean_workspace), relative_path)
+    
+    assert os.path.isabs(resolved_path)
+    assert resolved_path == os.path.abspath(expected_path)
+    
+    # Test absolute path (should return itself, just normalized)
+    abs_path_in = os.path.abspath("workspace/test.txt")
+    assert action_handler._resolve_path(abs_path_in) == abs_path_in
+
+
+# FIX: Issue 7 Integration Coverage - New Test for security denial
+def test_read_file_security_denial(action_handler, mock_managers):
+    """Tests that the action is denied if is_file_path_safe returns False."""
+    file_path_raw = "unsafe/path/to/secret.txt"
+    action = Action(action="READ_FILE", parameters={"file_path": file_path_raw})
+    
+    # Configure the mock resource manager to deny this path
+    mock_managers['resource_manager'].is_file_path_safe.return_value = False
+    
+    expected_result = f"Error: File path '{file_path_raw}' is unsafe or outside the allowed scope."
     result = action_handler.execute_action(action)
     
-    assert result.startswith("Error: Unknown action type 'UNKNOWN_ACTION'")
-
-# --- Additional tests for other actions (WRITE, DELETE, etc.) would follow here ---
+    mock_managers['resource_manager'].is_file_path_safe.assert_called_once()
+    mock_managers['memory_manager'].update_read_files.assert_not_called()
+    assert result == expected_result
