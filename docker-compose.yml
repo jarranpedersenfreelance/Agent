@@ -6,7 +6,6 @@ services:
     container_name: agent_container
     working_dir: /app/workspace
     
-    # FIX: Replaced "c" with "-c" to correctly pass the command string to the shell.
     command: ["/bin/sh", "-c", "echo 'Workspace ready. Starting Agent.' && PYTHONPATH=/app/workspace python3 -m core.agent_core"]
       
     environment:
@@ -20,12 +19,10 @@ services:
       - ./workspace:/app/workspace
       
       # --- Base Directory Files (Read-Only) ---
-      - ./.gitignore:/app/.gitignore:ro
       - ./README.md:/app/README.md:ro 
       - ./Dockerfile:/app/Dockerfile:ro
       - ./docker-compose.yml:/app/docker-compose.yml:ro
       - ./requirements.txt:/app/requirements.txt:ro
       - ./agent_manager.sh:/app/agent_manager.sh:ro
-      - ./gemini_prompts.txt:/app/gemini_prompts.txt:ro
       
-    restart: unless-stopped
+    restart: "no"

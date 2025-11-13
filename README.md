@@ -24,12 +24,11 @@ This is the **`workspace/`** directory, the Agent's mutable environment where al
 | **Core Logic** | Copies of `src/core/` files. Serves as primary operating logic. Agent cannot edit directly, but can submit edit proposals. | Read / Execute |
 | **Execution Logic** | Copies of `src/secondary/` files. Serves as secondary operating logic, the executionl layer. Agent can directly edit, but changes will be overwritten on the next deploy unless submitted as part of an edit proposal that is implemented. | Read / Write / Execute |
 | **Operating Data** | Aligns with `src/data/` files. These are files that largely persist across deployments such as logs and state memory. These files may be manually changed or rolled back occasionally. All such files should exist as empty files in `src/data/`, with the Agent responsible for updating the list in its update proposals if it adds or removes operating files. | Read / Write |
-| **Temp** | These are files that the Agent downloads or creates for temporary use. They will be regularly deleted and not guaranteed to persist across deployments. | Read / Write / Execute |
 
 ### Architectural Review
 The Agent must submit a proposal for all changes to the Core Logic (files in `src/`):
-1.  **Agent Proposes:** The Agent logs an **ACTION PROPOSAL** targeting the file in the workspace (e.g., `core/agent_core.py`).
-2.  **Architect Implements:** The Architect manually copies the approved changes into the corresponding file in the local **`src/` directory**, editing if needed.
+1.  **Agent Proposes:** The Agent submits a singular bundled update of all the changes it wants for its next deployment, stored as a file in its data/ directory.
+2.  **Architect Implements:** The Architect approves or denies the changes, implementing and editing as needed.
 3.  **Architect Deploys:** The Architect deploys the new version of the Agent
 
 The Agent should ensure it includes all necessary changes in its update proposal, including core logic changes, secondary/execution logic changes, and changes to the data directory file structure. 

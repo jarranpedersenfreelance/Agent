@@ -30,5 +30,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY src ./src
 
 # Default command to run the agent
-# FIX: Issue 10 - Use -m flag to resolve relative import errors
 CMD ["python3", "-m", "core.agent_core"]
