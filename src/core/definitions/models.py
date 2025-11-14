@@ -1,38 +1,23 @@
-# src/core/models.py
-
-from dataclasses import dataclass, field
 from typing import Dict, Any, List, Optional
-from pydantic import BaseModel 
+from pydantic import BaseModel
+from enum import Enum
 
-@dataclass
-class Action:
+class Action_Type(Enum):
+    REASON = 'REASON'
+    SLUMBER = 'SLUMBER'
+
+class Counter(Enum):
+    REASONING = 'REASONING'
+
+class Action(BaseModel):
     """Represents a single, executable action proposed by the LLM."""
-    name: str
-    arguments: Dict[str, Any] = field(default_factory=dict)
-    raw_text: str = ""
+    type: Action_Type
+    arguments: Dict[str, Any] = {}
+    payload: Dict[str, Any] = {}
     success: Optional[bool] = None
     observation: str = ""
 
-@dataclass
-class Memory:
-    """Represents a single entry in the Agent's long-term memory stream."""
-    timestamp: str
-    type: str # 'action', 'observation', 'thought', 'plan'
-    content: str
-    action_id: Optional[str] = None
-
-# Placeholder for the future Pydantic Action model, which is used for reasoning integration
-class ReasoningAction(BaseModel):
-    """The Pydantic model used for structured output from the LLM."""
-    type: str
-    payload: Dict[str, Any] = field(default_factory=dict)
-
-# Placeholder for Agent State Models
-class RateLimit(BaseModel):
-    max_limit: int
-
-class RateLimitState(BaseModel):
-    rpm: RateLimit = field(default_factory=lambda: RateLimit(max_limit=1000))
-    tpm: RateLimit = field(default_factory=lambda: RateLimit(max_limit=1000000))
-    rpd: RateLimit = field(default_factory=lambda: RateLimit(max_limit=10000))
-    llm_calls_made: int = 0
+class Memory(BaseModel):
+    """Represents the overall Agent memory."""
+    action_queue: List[Action] = []
+    counters: Dict[Counter, int] = {}

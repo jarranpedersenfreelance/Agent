@@ -3,8 +3,9 @@ from typing import Dict, Any
 
 from core.utilities import read_text_file, yaml_safe_load
 from core.execution.task_manager import TaskManager 
-from core.execution.reasoning import Brain
+from core.execution.brain import Brain
 from core.data_management.memory_manager import MemoryManager
+from core.definitions.models import Action_Type
 
 CONSTANTS_YAML = "core/definitions/agent_constants.yaml"
 
@@ -20,11 +21,10 @@ class AgentCore:
         # Initialize Data Variables
         self.constants: Dict[str, Any] = yaml_safe_load(CONSTANTS_YAML)
         self.agent_principles = read_text_file(self.constants['FILE_PATHS']['AGENT_PRINCIPLES_FILE'])
-        self.action_syntax = read_text_file(self.constants['FILE_PATHS']['ACTION_SYNTAX_FILE'])
         
         # Initialize Modules
-        self.task_manager = TaskManager(self.constants)
         self.memory_manager = MemoryManager(self.constants)
+        self.task_manager = TaskManager(self.constants, self.memory_manager)
         self.brain = Brain(self.constants, self.agent_principles, self.memory_manager)
 
         print("AgentCore initialized.")
@@ -32,20 +32,20 @@ class AgentCore:
     def run(self):
         print("Starting execution loop.")
         
-        current_step = 0
+        self.memory_manager.reset_reasoning_count()
         max_steps = self.constants['AGENT']['MAX_REASONING_STEPS']
 
-        while current_step < max_steps:
+        while self.memory_manager.get_reasoning_count() < max_steps:
             action = self.task_manager.dequeue_action()
             
-            if action.name == 'REASON':
-                current_step += 1
+            if action.type == Action_Type.REASON:
+                self.memory_manager.inc_reasoning_count()
                 
-                if self.resource_manager.is_daily_reasoning_limit_reached():
+                if self.memory_manager.get_reasoning_count() == max_steps:
                     print("Daily reasoning limit reached. Agent terminating.")
                     break
 
-                print("THINKING: " + action.raw_text)
+                print("THINKING: " + str(action.arguments))
                 new_actions = self.brain.get_next_actions(action)
                 if new_actions:
                     self.task_manager.add_actions(new_actions)

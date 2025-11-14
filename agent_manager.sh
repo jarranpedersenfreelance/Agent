@@ -37,7 +37,6 @@ function func_run_all_tests() {
     
     echo "--- Running Full Test Suite (/app/tests) ---"
     
-    # FIX: Changed /usr/bin/python to python3
     docker exec "$CONTAINER_NAME" python3 -m pytest /app/tests --junit-xml="$/app/$WORKSPACE_TEST_FILE"
     TEST_EXIT_CODE=$?
 
@@ -66,6 +65,12 @@ function func_copy_initial_files() {
     find workspace/data/ -type f -exec chmod a-x {} +
 }
 
+function func_cleanup_dangling_images() {
+    # Removes dangling images (those tagged as <none>) to prevent disk space issues
+    echo "Cleaning up dangling Docker images..."
+    docker image prune --force --filter "dangling=true" 2>/dev/null || true
+}
+
 # --- CORE DEPLOYMENT LOGIC ---
 
 function func_base_deploy() {
@@ -79,6 +84,8 @@ function func_base_deploy() {
     docker-compose rm -f "$SERVICE_NAME" 2>/dev/null || true
 
     # Workspace Cleanup (Code Directories)
+    chmod -R u+w workspace/core 2>/dev/null || true
+    chmod -R u+w workspace/secondary 2>/dev/null || true
     rm -rf workspace/core/*
     rm -rf workspace/secondary/*
     
@@ -88,6 +95,9 @@ function func_base_deploy() {
     # Build and Start
     echo "Building and starting the '$SERVICE_NAME' container..."
     docker-compose up -d --build "$SERVICE_NAME"
+
+    # Clean up dangling images created by the build process
+    func_cleanup_dangling_images
 }
 
 function func_deploy() {

@@ -1,11 +1,8 @@
 # Configuration constants for the Agent
 
 FILE_PATHS:
-    AGENT_PRINCIPLES_FILE: "core/agent_principles.txt"
-    ACTION_SYNTAX_FILE: "core/action_syntax.txt"
-    ACTION_QUEUE_FILE: "data/action_queue.json"
-    MEMORY_STREAM_FILE: "data/memory_stream.json"
-    RESOURCES_STATE_FILE: "data/resource_state.yaml"
+    AGENT_PRINCIPLES_FILE: "core/definitions/agent_principles.txt"
+    MEMORY_FILE: "data/memory.json"
 
 API:
     MODEL: "gemini-2.5-flash"
@@ -14,6 +11,5 @@ API:
     RPD_LIMIT: 10000       # Requests Per Day
 
 AGENT:
-    LOOP_SLEEP_SECONDS: 0.5 # (allows tight loop while preventing CPU exhaustion)
     MAX_REASONING_STEPS: 100
     STARTING_TASK: "Gather information about self and environment to decide first task based on discovered purpose."

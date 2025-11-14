@@ -1,8 +1,6 @@
 import os
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List
 from google import genai
-from google.genai import types
-from pydantic import ValidationError
 from core.definitions.models import Action
 
 class Brain:

@@ -1,43 +1,26 @@
-import os
-import json
 from typing import Any, Dict, List, Union
-from core.definitions.models import Action
+from core.data_management.memory_manager import MemoryManager
+from core.definitions.models import Action, Action_Type
 from core.utilities import json_load, json_dump
 
 class TaskManager:
     """Manages the action queue and task state for the agent."""
     
-    def __init__(self, constants: Dict[str, Any]):
+    def __init__(self, constants: Dict[str, Any], memory_manager: MemoryManager):
         self.constants = constants
-        self.queue_file = self.constants['FILE_PATHS']['ACTION_QUEUE_FILE']
-        self._load_queue()
-
-    def _load_queue(self):
-        try:
-            raw_queue = json_load(self.queue_file)
-            self.queue = [Action(**item) for item in raw_queue]
-        except FileNotFoundError:
-            self.queue = self._get_default_queue()
-            self._save_queue()
-        except json.JSONDecodeError:
-            print(f"Warning: Action queue file {self.queue_file} is corrupted. Resetting to default.")
-            self.queue = self._get_default_queue()
-            self._save_queue()
-
+        self.memory_manager = memory_manager
+        self.queue = memory_manager.memory['action_queue']
         if (not self.queue):
             self.queue = self._get_default_queue()
-            self._save_queue()
-
-    def _save_queue(self):
-        """Saves the current action queue to disk."""
-        json_dump([item.model_dump() for item in self.queue], self.queue_file)
+            self.memory_manager.memorize()
+        
 
     def _get_default_queue(self) -> List[Action]:
         """Returns the default action queue: a single REASON action."""
         starting_task = self.constants['AGENT']['STARTING_TASK']
         initial_action = Action(
-            type="REASON", 
-            payload={"task": starting_task}
+            type=Action_Type.REASON, 
+            arguments={"task": starting_task}
         )
         return [initial_action]
 
@@ -47,20 +30,20 @@ class TaskManager:
             return None
         
         action = self.queue.pop(0)
-        self._save_queue()
+        self.memory_manager.memorize()
         return action
 
     def add_action(self, action: Action):
         """Adds a single action to the end of the queue."""
         self.queue.append(action)
-        self._save_queue()
+        self.memory_manager.memorize()
 
     def add_actions(self, actions: List[Action]):
         """Adds a list of actions to the end of the queue."""
         if actions:
             self.queue.extend(actions)
-            self._save_queue()
+            self.memory_manager.memorize()
 
-    def get_queue_status(self) -> List[Dict[str, Any]]:
+    def get_queue_contents(self) -> List[Dict[str, Any]]:
         """Returns a list of the queue contents for inspection."""
         return [item.model_dump() for item in self.queue]
