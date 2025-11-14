@@ -3,6 +3,7 @@
 FILE_PATHS:
     AGENT_PRINCIPLES_FILE: "core/definitions/agent_principles.txt"
     MEMORY_FILE: "data/memory.json"
+    ACTION_LOG_FILE: "data/action_log.txt"
 
 API:
     MODEL: "gemini-2.5-flash"
