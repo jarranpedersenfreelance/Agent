@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Union
 from core.definitions.models import Mem, Count, Action, Action_Type
-from core.utilities import json_typed_load, json_dump, current_timestamp
+from core.utilities import json_typed_load, json_dump, current_timestamp, scan_workspace
 
 class Memory:
     """Manages the agent's memory"""
@@ -9,8 +9,17 @@ class Memory:
         self.constants = constants
         self.memory_file = self.constants['FILE_PATHS']['MEMORY_FILE']
         self.memory = json_typed_load(Mem, self.memory_file)
+        
+        # Initialize action queue if empty
         if (not self.memory.action_queue):
             self.reset_actions()
+            
+        # Initialize file_contents with file structure if empty
+        if (not self.memory.file_contents):
+            print("INFO: Initializing file structure in memory...")
+            file_paths = scan_workspace(root_dir=".")
+            self.memory.file_contents = {path: "" for path in file_paths}
+            print(f"INFO: Tracked {len(file_paths)} files.")
 
     def memorize(self):
         """Saves memory to disk."""
@@ -41,7 +50,6 @@ class Memory:
         """Removes and returns the next action from the front of the queue."""
         if not self.memory.action_queue:
             return None
-        
         return self.memory.action_queue.pop(0)
 
     def add_action(self, action: Action):
