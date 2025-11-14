@@ -7,6 +7,43 @@ from pydantic import BaseModel
 
 T = TypeVar('T', bound=BaseModel)
 
+# --- File Scanning Utility Function ---
+
+def scan_workspace(root_dir: str = ".") -> List[str]:
+    """
+    Recursively scans the directory and returns a list of all file paths 
+    relative to the root_dir. Excludes common system/build files.
+    """
+    file_paths = []
+    
+    # Define directories/files to ignore in the workspace scan
+    IGNORE_DIRS = set(['__pycache__', '.git'])
+    IGNORE_FILES = set(['.DS_Store', 'Thumbs.db'])
+
+    for dirpath, dirnames, filenames in os.walk(root_dir):
+        # Filter out ignored directories in place for os.walk efficiency
+        dirnames[:] = [d for d in dirnames if d not in IGNORE_DIRS]
+
+        # Calculate the relative path of the current directory
+        relative_dir = os.path.relpath(dirpath, root_dir)
+        # os.path.relpath returns '.' for the root, which we should ignore in the join
+        if relative_dir == '.':
+            relative_dir = ''
+
+        for filename in filenames:
+            if filename not in IGNORE_FILES:
+                # Construct the full relative path
+                if relative_dir:
+                    full_path = os.path.join(relative_dir, filename)
+                else:
+                    full_path = filename
+                
+                # Normalize the path to use forward slashes for consistency
+                file_paths.append(full_path.replace(os.sep, '/'))
+                
+    return sorted(file_paths)
+
+
 # --- YAML Utility Functions ---
 
 def yaml_safe_load(file_path: str) -> Union[Dict[str, Any], List[Any]]:
