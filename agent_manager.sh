@@ -208,12 +208,19 @@ function func_snapshot() {
     fi
 }
 
+function func_clean() {
+    echo "Emptying workspace directory..."
+    chmod -R u+w workspace/ 2>/dev/null || true
+    rm -rf workspace/*
+}
+
 function usage() {
     echo "Usage: ./agent_manager.sh <command>"
     echo ""
     echo "Commands:"
     echo "  deploy          : Run a full deployment and start the agent."
     echo "  test-deploy     : Run a full deployment setup, execute ALL tests, and STOP the container, leaving it available for log inspection."
+    echo "  clean           : Clear the workspace directory."
     echo "  logs            : Display the most recent logs from the agent container."
     echo "  snapshot        : Generate the codebase_snapshot.txt file for context upload."
     echo ""
@@ -232,6 +239,9 @@ case "$1" in
         ;;
     test-deploy)
         func_test_deploy
+        ;;
+    clean)
+        func_clean
         ;;
     logs)
         func_logs

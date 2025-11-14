@@ -2,21 +2,23 @@ import os
 from typing import Any, Dict, List
 from google import genai
 from core.definitions.models import Action
+from core.brain.memory import Memory
 
-class Brain:
+class Reason:
     """Serves as the Agents reasoning."""
     def __init__(self, 
                  constants: Dict[str, Any], 
                  principles: str, 
-                 memory_manager: Any):
+                 memory: Memory):
         
         self.constants = constants
-        self.gemini = Gemini(constants, principles, memory_manager)
+        self.principles = principles
+        self.memory = memory
+        self.gemini = Gemini(constants, principles, memory)
     
     def get_next_actions(self, current_action: Action) -> List[Action]:
         # TODO Add local reasoning before elevating to Gemini
-
-        return self.gemini.get_next_action(current_action)
+        return self.gemini.get_next_actions(current_action)
 
 class Gemini:
     """Handles integration with the Gemini API for the agent's reasoning process."""
@@ -24,12 +26,12 @@ class Gemini:
     def __init__(self, 
                  constants: Dict[str, Any], 
                  principles: str, 
-                 memory_manager: Any):
+                 memory: Memory):
         
         self.constants = constants
-        self.memory_manager = memory_manager
+        self.memory = memory
         self.model_name = self.constants['API']['MODEL']
-        self.agent_principles = principles
+        self.principles = principles
         
         self.api_key = os.environ.get("GEMINI_API_KEY")
         if not self.api_key:

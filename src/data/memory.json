@@ -1,6 +1,7 @@
 {
     "action_queue": [],
     "counters": {
-        "reasoning": 0
-    }
+        "REASONING": 0
+    },
+    "last_memorized": 0
 }

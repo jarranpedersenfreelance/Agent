@@ -2,10 +2,10 @@ import os
 from typing import Dict, Any
 
 from core.utilities import read_text_file, yaml_safe_load
-from core.execution.task_manager import TaskManager 
-from core.execution.brain import Brain
-from core.data_management.memory_manager import MemoryManager
-from core.definitions.models import Action_Type
+from core.definitions.models import Action_Type, Count
+from core.brain.memory import Memory
+from core.brain.reason import Reason
+from core.execution.action_handler import ActionHandler
 
 CONSTANTS_YAML = "core/definitions/agent_constants.yaml"
 
@@ -23,42 +23,43 @@ class AgentCore:
         self.agent_principles = read_text_file(self.constants['FILE_PATHS']['AGENT_PRINCIPLES_FILE'])
         
         # Initialize Modules
-        self.memory_manager = MemoryManager(self.constants)
-        self.task_manager = TaskManager(self.constants, self.memory_manager)
-        self.brain = Brain(self.constants, self.agent_principles, self.memory_manager)
+        self.memory = Memory(self.constants)
+        self.reason = Reason(self.constants, self.agent_principles, self.memory)
+        self.action_handler = ActionHandler(self.constants)
 
         print("AgentCore initialized.")
 
     def run(self):
-        print("Starting execution loop.")
+        print("Starting execution loop...")
         
-        self.memory_manager.reset_reasoning_count()
+        self.memory.set_count(Count.REASONING, 0)
         max_steps = self.constants['AGENT']['MAX_REASONING_STEPS']
 
-        while self.memory_manager.get_reasoning_count() < max_steps:
-            action = self.task_manager.dequeue_action()
+        while self.memory.get_count(Count.REASONING) < max_steps:
+            self.memory.memorize()
+            action = self.memory.pop_action()
             
             if action.type == Action_Type.REASON:
-                self.memory_manager.inc_reasoning_count()
+                reason_count = self.memory.inc_count(Count.REASONING)
                 
-                if self.memory_manager.get_reasoning_count() == max_steps:
-                    print("Daily reasoning limit reached. Agent terminating.")
+                if reason_count == max_steps:
+                    print("Daily reasoning limit reached. Agent terminating...")
                     break
 
-                print("THINKING: " + str(action.arguments))
-                new_actions = self.brain.get_next_actions(action)
+                print("THINKING: " + action.arguments['task'])
+                new_actions = self.reason.get_next_actions(action)
                 if new_actions:
-                    self.task_manager.add_actions(new_actions)
+                    self.memory.add_actions(new_actions)
                     print(f"Queued {len(new_actions)} new actions.")
                 else:
-                    print("Reasoning returned no new actions. Critical failure. Agent terminating")
+                    print("Reasoning returned no new actions. Agent terminating...")
                     break
 
             else:
                 observation = self.action_handler.exec_action(action)
                 print(f"Observation: {observation}")
 
-        print("\nAgent finished execution loop.")
+        print("Agent finished execution loop.")
 
 # --- Main Entry Point ---
 if __name__ == "__main__":
