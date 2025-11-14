@@ -4,7 +4,7 @@
 SERVICE_NAME="agent"
 CONTAINER_NAME="agent_container"
 SNAPSHOT_FILE="codebase_snapshot.txt"
-MAX_SNAPSHOT_SIZE=30000 # ~3 MB (can increase up to 10)
+MAX_SNAPSHOT_SIZE=3000000 # ~3 MB (can increase up to 10)
 
 # --- FILE LOCATIONS ---
 TEST_REPORT_FILE="test_results.xml"
