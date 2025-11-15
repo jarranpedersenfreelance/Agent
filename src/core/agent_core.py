@@ -46,10 +46,8 @@ class AgentCore:
                     self.logger.log_info(f"Queuing Plan action")
                     self.memory.add_action(ReasonAction(
                         type = ActionType.REASON,
-                        arguments = ReasonActionArgs(
-                            task = "Plan",
-                            explanation = "queue was empty"
-                        )
+                        task = "Plan",
+                        explanation = "action queue was empty"
                     ))
                 
                 elif isinstance(action, ReasonAction):
@@ -69,10 +67,8 @@ class AgentCore:
                         self.logger.log_info(f"Queuing Debug action")
                         self.memory.add_action(ReasonAction(
                             type = ActionType.REASON,
-                            arguments = ReasonActionArgs(
-                                task = "Debug why last reason action returned no actions",
-                                explanation = "reasoning failed"
-                            )
+                            task = "Debug why last reason action returned no actions",
+                            explanation = "reasoning failed to return actions"
                         ))
 
                 else:
@@ -83,10 +79,8 @@ class AgentCore:
                 self.logger.log_info(f"Queuing Debug action")
                 self.memory.add_action(ReasonAction(
                     type = ActionType.REASON,
-                    arguments = ReasonActionArgs(
-                        task = "Debug why last action failed",
-                        explanation = "action failed"
-                    )
+                    task = "Debug why last action failed",
+                    explanation = "action failed"
                 ))
 
 
