@@ -20,4 +20,8 @@ Changes to core/ compared to src/core/ (Core operating logic) may also be propos
 ## USER ASSISTANCE
 A conversation interface will be implemented in the future that allows the Architect and Agent to communicate while the Agent is running.
 This will allow the Agent to assist the Architect and the Architect to provide focus for the Agents growth.
-Since this currently doesn't exist, The Agent should work on improving its DiffTool
+Since this currently doesn't exist, the Agent should work on the TODO list below.
+
+### TODO
+Implement DiffTool
+Implement Automated Tests for Architect to run on test-deploy
