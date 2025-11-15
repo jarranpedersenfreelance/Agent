@@ -1,10 +1,9 @@
-import os
-import importlib
 from typing import Dict, Any
 from core.logger import Logger
-from core.definitions.models import Action, RunScriptAction, ReadFileAction, WriteFileAction, DeleteFileAction
+from core.definitions.models import Action, ThinkAction, RunToolAction, ReadFileAction, WriteFileAction, DeleteFileAction
 from core.brain.memory import Memory
 from core.utilities import read_file, write_file, delete_file
+from core.execution.toolbox import ToolBox
 
 class ActionHandler:
     """Manages the execution of actions other than the REASON action."""
@@ -12,6 +11,7 @@ class ActionHandler:
         self.constants = constants
         self.logger = logger
         self.memory = memory
+        self.toolbox = ToolBox(constants, self.logger, self.memory)
 
     def exec_action(self, action: Action):
         """Executes a successfully parsed Action."""
@@ -26,35 +26,35 @@ class ActionHandler:
         """Handles the NO_OP action."""
         self.logger.log_action(action, "")
 
-    def _handle_run_script(self, action: RunScriptAction):
-        """Handles the RUN_SCRIPT action."""
-        file_path = action.file_path
-        self.logger.log_action(action, f"{file_path} with args: {str(action.arguments)} - {action.explanation}")
+    def _handle_think(self, action: ThinkAction):
+        """Handles the THINK action."""
+        label = action.label
+        thought = action.thought
+        is_delete = action.delete
+        op_string = 'DELETE' if is_delete else 'INSERT'
 
-        if not file_path:
-            raise ValueError("RUN_SCRIPT action requires 'file_path' argument.")
+        self.logger.log_action(action, f"{label} - {op_string} - {action.explanation}")
+        thoughts = self.memory.list_thoughts()
+
+        if is_delete:
+            if not label in thoughts:
+                raise ValueError("THINK action tried to delete thought that doesn't exist.")
+            self.memory.remove_thought(label)
         
-        if not os.path.exists(file_path):
-            raise FileNotFoundError(f"Script file not found: {file_path}")
+        else:
+            self.memory.add_thought(label, thought)
 
-        spec = importlib.util.spec_from_file_location("dynamic_module", file_path)
-        if spec is None:
-            raise ImportError(f"Could not create module specification for {file_path}")
-
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-
-        if not hasattr(module, 'main'):
-            raise AttributeError(f"Script {file_path} must define a 'main' function.")
-
-        module.main(action.arguments)
-
-
-        
+    def _handle_run_tool(self, action: RunToolAction):
+        """Handles the RUN_TOOL action."""
+        module_path = action.module_path
+        tool_class = action.tool_class
+        args = action.arguments
+        self.logger.log_action(action, f"{tool_class} with args: {str(args)} - {action.explanation}")
+        self.toolbox.run_tool(module_path, tool_class, args)
 
     def _handle_read_file(self, action: ReadFileAction):
         """Handles the READ_FILE action."""
-        file_path = action.arguments.file_path
+        file_path = action.file_path
         self.logger.log_action(action, f"{file_path} - {action.explanation}")
 
         if not file_path:
@@ -68,8 +68,8 @@ class ActionHandler:
 
     def _handle_write_file(self, action: WriteFileAction):
         """Handles the WRITE_FILE action."""
-        file_path = action.arguments.file_path
-        contents = action.arguments.file_contents
+        file_path = action.file_path
+        contents = action.contents
         self.logger.log_action(action, f"{file_path} - {action.explanation}")
 
         if not file_path:
@@ -80,7 +80,7 @@ class ActionHandler:
 
     def _handle_delete_file(self, action: DeleteFileAction):
         """Handles the DELETE_FILE action."""
-        file_path = action.arguments.file_path
+        file_path = action.file_path
         self.logger.log_action(action, f"{file_path} - {action.explanation}")
 
         if not file_path:

@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Union
 from core.logger import Logger
-from core.definitions.models import Mem, Count, Action, ActionType, ReasonAction
+from core.definitions.models import Mem, Count, Action, ReasonAction
 from core.utilities import json_typed_load, json_dump, current_timestamp, scan_workspace
 
 class Memory:
@@ -51,7 +51,7 @@ class Memory:
     def reset_actions(self):
         starting_task = self.constants['AGENT']['STARTING_TASK']
         initial_action = ReasonAction()
-        initial_action.arguments.task = starting_task
+        initial_action.task = starting_task
         initial_action.explanation = "initial action"
         self.memory.action_queue = [initial_action]
 
