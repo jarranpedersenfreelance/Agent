@@ -109,5 +109,5 @@ def delete_file(file_path: str):
 
 # --- Time Utility Functions ---
 
-def current_timestamp():
-    return datetime.now(timezone.utc).timestamp()
+def current_timestamp() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")

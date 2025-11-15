@@ -1,7 +1,6 @@
 from typing import Any, Dict
-from datetime import datetime, timezone
 from core.definitions.models import LogType, Action
-from core.utilities import append_file
+from core.utilities import append_file, current_timestamp
 
 class Logger:
     """Manages logging and printing to the console"""
@@ -28,7 +27,7 @@ class Logger:
         log_str = f"[{label}]: {msg}"
         print(log_str)
 
-        time_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")
+        time_str = current_timestamp()
         file_log_str = f"[{time_str}]{log_str}\n"
         append_file(self.log_file, file_log_str)
 

@@ -32,7 +32,7 @@ class Mem(BaseModel):
     counters: Dict[Count, int] = {}
     file_contents: Dict[str, str] = {}
     thoughts: Dict [str, str] = {}
-    last_memorized: float = 0
+    last_memorized: str = ""
 
 class ReasonAction(Action):
     """Represents the Reason action."""

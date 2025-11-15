@@ -38,6 +38,13 @@ class Memory:
         self.memory.last_memorized = current_timestamp()
         json_dump(self.memory, self.memory_file)
 
+    def get_last_memorized(self) -> str:
+        return self.memory.last_memorized
+    
+    def get_files(self) -> Dict[str, str]:
+        """Returns file representation."""
+        return self.memory.file_contents
+
     def get_count(self, counter: Count) -> int:
         return self.memory.counters[counter]
     
@@ -47,6 +54,9 @@ class Memory:
     
     def set_count(self, counter: Count, val: int):
         self.memory.counters[counter] = val
+
+    def list_counts(self) -> Dict[Count, int]:
+        return self.memory.counters.copy()
 
     def reset_actions(self):
         starting_task = self.constants['AGENT']['STARTING_TASK']
@@ -69,6 +79,10 @@ class Memory:
         """Adds a list of actions to the end of the queue."""
         if actions:
             self.memory.action_queue.extend(actions)
+
+    def list_actions(self) -> List[Action]:
+        """Gets a copy of the action queue."""
+        return self.memory.action_queue.copy()
 
     def add_thought(self, label: str, thought: str):
         """Adds or overwrites an indexed thought."""

@@ -1,6 +1,6 @@
 # Configuration constants for the Agent
 
-LOG_LEVEL: 5 # DEBUG
+LOG_LEVEL: 4 # INFO
 
 FILE_PATHS:
     AGENT_PRINCIPLES_FILE: "core/definitions/agent_principles.txt"
