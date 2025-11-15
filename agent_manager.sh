@@ -35,9 +35,9 @@ function func_run_all_tests() {
         return 1
     fi
     
-    echo "--- Running Full Test Suite (/app/tests) ---"
+    echo "--- Running Full Test Suite (/app/secondary/tests) ---"
     
-    docker exec "$CONTAINER_NAME" python3 -m pytest /app/tests --junit-xml="$/app/$WORKSPACE_TEST_FILE"
+    docker exec "$CONTAINER_NAME" python3 -m pytest /app/secondary/tests --junit-xml="$/app/$WORKSPACE_TEST_FILE"
     TEST_EXIT_CODE=$?
 
     return $TEST_EXIT_CODE

@@ -1,9 +1,14 @@
 # Configuration constants for the Agent
 
+LOG_LEVEL: 5 # DEBUG
+
 FILE_PATHS:
     AGENT_PRINCIPLES_FILE: "core/definitions/agent_principles.txt"
     MEMORY_FILE: "data/memory.json"
-    ACTION_LOG_FILE: "data/action_log.txt"
+    SRC_MEMORY_FILE: "/app/src/data/memory.json"
+    TEST_MEMORY_FILE: "data/test/memory.json"
+    LOG_FILE: "data/log.txt"
+    TEST_LOG_FILE: "data/test/log.txt"
 
 API:
     MODEL: "gemini-2.5-flash"
@@ -12,5 +17,5 @@ API:
     RPD_LIMIT: 10000       # Requests Per Day
 
 AGENT:
-    MAX_REASONING_STEPS: 100
+    MAX_REASON_STEPS: 100
     STARTING_TASK: "Gather information about self and environment to decide first task based on discovered purpose."

@@ -1,14 +1,20 @@
 from typing import Any, Dict, List, Union
-from core.definitions.models import Mem, Count, Action, Action_Type
+from core.logger import Logger
+from core.definitions.models import Mem, Count, Action, ActionType
 from core.utilities import json_typed_load, json_dump, current_timestamp, scan_workspace
 
 class Memory:
     """Manages the agent's memory"""
     
-    def __init__(self, constants: Dict[str, Any]):
+    def __init__(self, constants: Dict[str, Any], logger: Logger, mock: bool = False):
         self.constants = constants
-        self.memory_file = self.constants['FILE_PATHS']['MEMORY_FILE']
-        self.memory = json_typed_load(Mem, self.memory_file)
+        self.logger = logger
+        if not mock:
+            self.memory_file = self.constants['FILE_PATHS']['MEMORY_FILE']
+            self.memory = json_typed_load(Mem, self.memory_file)
+        else:
+            self.memory_file = self.constants['FILE_PATHS']['TEST_MEMORY_FILE']
+            self.memory = json_typed_load(Mem, self.constants['FILE_PATHS']['SRC_MEMORY_FILE'])
         
         # Initialize action queue if empty
         if (not self.memory.action_queue):
@@ -23,6 +29,9 @@ class Memory:
 
     def memorize(self):
         """Saves memory to disk."""
+        # mock memory used for tests isn't saved to disk
+        if self.mock:
+            return
         # TODO: add file size checks that trigger compression functions
         # TODO: add validation to ensure memory isn't corrupted
         self.memory.last_memorized = current_timestamp()
@@ -41,7 +50,7 @@ class Memory:
     def reset_actions(self):
         starting_task = self.constants['AGENT']['STARTING_TASK']
         initial_action = Action(
-            type=Action_Type.REASON, 
+            type=ActionType.REASON, 
             arguments={"task": starting_task}
         )
         self.memory.action_queue = [initial_action]

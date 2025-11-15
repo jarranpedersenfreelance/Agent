@@ -13,9 +13,8 @@ services:
     volumes:
       # --- Source Code and Core Logic (Read-Only) ---
       - ./src:/app/src:ro
-      - ./tests:/app/tests:ro 
       
-      # --- Agent State/Output (Read/Write) ---
+      # --- Agent State/Output (Read/Write/Exec) ---
       - ./workspace:/app/workspace
       
       # --- Base Directory Files (Read-Only) ---

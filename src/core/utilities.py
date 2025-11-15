@@ -85,16 +85,22 @@ def json_dump(data: Any, file_path: str):
 
 # --- File I/O Utility Functions ---
 
-def read_text_file(file_path: str) -> str:
-    """Reads the entire content of a text file."""
+def read_file(file_path: str) -> str:
+    """Reads the entire content of a file (utf-8)."""
     with open(file_path, 'r', encoding='utf-8') as f:
         return f.read()
 
-def write_text_file(file_path: str, content: str):
-    """Writes content to a text file, creating directories if necessary."""
+def write_file(file_path: str, content: str):
+    """Writes content to a file, creating directories if necessary (utf-8)."""
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     with open(file_path, 'w', encoding='utf-8') as f:
         f.write(content)
+
+def append_file(file_path: str, content: str):
+    """Appends to an existing file (utf-8)."""
+    if os.path.exists(file_path):
+        with open(file_path, 'a', encoding='utf-8') as f:
+            f.write(content)
 
 def delete_file(file_path: str):
     """Deletes a file if it exists."""

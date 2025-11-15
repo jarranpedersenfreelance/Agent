@@ -1,6 +1,7 @@
 import os
 from typing import Any, Dict, List
 from google import genai
+from core.logger import Logger
 from core.definitions.models import Action
 from core.brain.memory import Memory
 
@@ -8,10 +9,12 @@ class Reason:
     """Serves as the Agents reasoning."""
     def __init__(self, 
                  constants: Dict[str, Any], 
+                 logger: Logger,
                  principles: str, 
                  memory: Memory):
         
         self.constants = constants
+        self.logger = logger
         self.principles = principles
         self.memory = memory
         self.gemini = Gemini(constants, principles, memory)
@@ -40,7 +43,7 @@ class Gemini:
 
     def _build_context_prompt(self, current_action: Action) -> str:
         """Constructs the comprehensive prompt for the LLM."""
-        # TODO construct the prompt out of reasoning principles, current_action, and memory
+        # TODO construct the prompt out of agent principles, current_action, and memory
         
         return ""
 
