@@ -38,13 +38,15 @@ class ReasonAction(Action):
     """Represents the Reason action."""
     type: Literal[ActionType.REASON] = ActionType.REASON
     task: str = ""
+    files_to_send: List[str] = []
+    thoughts_to_send: List[str] = []
 
 class ThinkAction(Action):
     """Represents the Think action."""
     type: Literal[ActionType.THINK] = ActionType.THINK
     delete: bool = False
     label: str = ""
-    thought = ""
+    thought: str = ""
 
 class RunToolAction(Action):
     """Represents the RunTool action."""

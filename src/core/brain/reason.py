@@ -9,7 +9,8 @@ from core.definitions.models import (
     Action, 
     ActionType, 
     ReasonAction,
-    RunScriptAction, 
+    ThinkAction,
+    RunToolAction, 
     ReadFileAction, 
     WriteFileAction, 
     DeleteFileAction
@@ -19,7 +20,7 @@ from core.brain.memory import Memory
 # --- Pydantic Models for LLM Response Validation ---
 
 AnyAction = Annotated[
-    Union[ReasonAction, RunScriptAction, ReadFileAction, WriteFileAction, DeleteFileAction, Action],
+    Union[ReasonAction, ThinkAction, RunToolAction, ReadFileAction, WriteFileAction, DeleteFileAction, Action],
     Field(discriminator='type')
 ]
 
@@ -33,32 +34,40 @@ SCHEMA_DEFINITION = """
   "actions": [
     {
       "type": "REASON",
-      "explanation": "<Why you are reasoning>",
-      "arguments": {
-        "task": "<The sub-task to reason about>"
-      }
+      "explanation": "<Why you selected this task>",
+      "task": "<The task to develop an action plan for>",
+      "files_to_send": "<A JSON List[str] of file paths that specifies what file contents to send>",
+      "thoughts_to_send": "<A JSON List[str] of thought labels that specifies what thought contents to send>"
+    },
+    {
+      "type": "THINK",
+      "explanation": "<Why you are inserting, modifying, or deleting this thought>",
+      "delete": "<The bool value for if you are deleting the thought or not>",
+      "label": "<The thought index>",
+      "thought": "<The thought contents>"
+    },
+    {
+      "type": "RUN_TOOL",
+      "explanation": "<Why you selected this task>",
+      "module_path": "<path/to/file>"
+      "tool class": "<Type for the Tool>"
+      "arguments": "<A JSON [str, Any] dictionary of arguments>"
     },
     {
       "type": "READ_FILE",
       "explanation": "<Why you are reading this file>",
-      "arguments": {
-        "file_path": "<path/to/file>"
-      }
+      "file_path": "<path/to/file>"
     },
     {
       "type": "WRITE_FILE",
       "explanation": "<Why you are writing this file>",
-      "arguments": {
-        "file_path": "<path/to/file>",
-        "contents": "<Full contents to write>"
-      }
+      "file_path": "<path/to/file>",
+      "contents": "<Full contents to write>"
     },
     {
       "type": "DELETE_FILE",
       "explanation": "<Why you are deleting this file>",
-      "arguments": {
-        "file_path": "<path/to/file>"
-      }
+      "file_path": "<path/to/file>"
     }
   ]
 }
