@@ -5,11 +5,6 @@ SERVICE_NAME="agent"
 CONTAINER_NAME="agent_container"
 SNAPSHOT_FILE="codebase_snapshot.txt"
 MAX_SNAPSHOT_SIZE=3000000 # ~3 MB (can increase up to 10)
-
-# --- NEW: SNAPSHOT EXCLUSIONS CONSTANT ---
-# Excludes for the snapshot generation process.
-# Format for `tree` and `find`: paths and file patterns separated by '|'
-# '.DS_Store' has been added to the list.
 SNAPSHOT_EXCLUSIONS='workspace|*.git|.env|.DS_Store'
 
 # --- FILE LOCATIONS ---
@@ -186,10 +181,8 @@ function func_snapshot() {
         echo "=================================================="
         echo "## PROJECT DIRECTORY STRUCTURE"
         echo "=================================================="
-        # Updated to use the SNAPSHOT_EXCLUSIONS constant
         tree -a -F -I "$SNAPSHOT_EXCLUSIONS" --noreport 2>/dev/null || (
             echo "Warning: 'tree' command not found. Falling back to 'find/ls'."
-            # Fallback updated to use the paths defined in the constant
             find . -not -path "./workspace/*" -not -path "./.git/*" -not -name "$SNAPSHOT_FILE" -not -name ".env" -not -name ".DS_Store" | sort
         )
         echo ""
@@ -198,7 +191,6 @@ function func_snapshot() {
     echo "Compiling File Contents..."
     echo "--- FILE CONTENTS START ---" >> "$SNAPSHOT_FILE"
 
-    # The file contents find is the critical part for size, and needs explicit -not -name filters for files in the root that are excluded.
     find . -type f -not -path "./workspace/*" -not -name "$SNAPSHOT_FILE" -not -path "./.git/*" -not -name ".env" -not -name ".DS_Store" | while IFS= read -r FILE; do
         echo "--- FILE START: $FILE ---" >> "$SNAPSHOT_FILE"
         cat "$FILE" >> "$SNAPSHOT_FILE" || true
