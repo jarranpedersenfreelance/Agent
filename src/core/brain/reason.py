@@ -129,22 +129,18 @@ class Gemini:
         constants_content = json.dumps(constants, indent=2)
         
         # Serialize memory
-        try:
-            selected_memory = {
-              "action_queue": self.memory.list_actions(),
-              "counters": self.memory.list_counts(),
-              "file_contents": {
-                k: mem_files[k] if k in current_action.files_to_send 
-                else None
-                for k in mem_files
-              },
-              "thoughts": {k: mem_files[k] for k in current_action.thoughts_to_send},
-              "last_memorized": self.memory.get_last_memorized()
-            }
-            memory_content = json.dumps(selected_memory, indent=2)
-        except Exception as e:
-            self.logger.log_error(f"Failed to serialize memory for prompt: {e}")
-            memory_content = "{}" # Fallback to empty JSON
+        selected_memory = {
+          "action_queue": self.memory.list_actions(),
+          "counters": self.memory.list_counts(),
+          "file_contents": {
+            k: mem_files[k] if k in current_action.files_to_send 
+            else None
+            for k in mem_files
+          },
+          "thoughts": {k: mem_files[k] for k in current_action.thoughts_to_send},
+          "last_memorized": self.memory.get_last_memorized()
+        }
+        memory_content = json.dumps(selected_memory, indent=2)
 
         # Construct the prompt
         prompt = f"""
@@ -182,36 +178,27 @@ The *last* action in the list *must* be a "REASON" action for the next step.
         prompt = self._build_context_prompt(current_action)
         self.logger.log_info(f"Sending prompt to Gemini for task: {current_action.task}")
 
-        try:
-            response = self.model.generate_content(
-                prompt,
-                generation_config={"response_mime_type": "application/json"}
+        response = self.model.generate_content(
+            prompt,
+            generation_config={"response_mime_type": "application/json"}
+        )
+        
+        response_text = response.text
+        self.logger.log_debug(f"Gemini raw response: {response_text}")
+        parsed_response = GeminiResponse.model_validate_json(response_text)
+        
+        if not parsed_response.actions:
+            self.logger.log_warning("Gemini returned an empty action list.")
+            return [] # Will trigger a debug action in core
+
+        # Validate that the last action is REASON
+        if parsed_response.actions[-1].type != ActionType.REASON:
+            self.logger.log_warning("Gemini response did not end with a REASON action. Appending one.")
+            parsed_response.actions.append(
+                ReasonAction(
+                    explanation="Default action because LLM response did not end with REASON.",
+                    task="Review and correct the previous action plan."
+                )
             )
             
-            response_text = response.text
-            self.logger.log_debug(f"Gemini raw response: {response_text}")
-            parsed_response = GeminiResponse.model_validate_json(response_text)
-            
-            if not parsed_response.actions:
-                self.logger.log_warning("Gemini returned an empty action list.")
-                return [] # Will trigger a debug action in core
-
-            # Validate that the last action is REASON
-            if parsed_response.actions[-1].type != ActionType.REASON:
-                self.logger.log_warning("Gemini response did not end with a REASON action. Appending one.")
-                parsed_response.actions.append(
-                    ReasonAction(
-                        explanation="Default action because LLM response did not end with REASON.",
-                        task="Review and correct the previous action plan."
-                    )
-                )
-                
-            return parsed_response.actions
-
-        except ValidationError as e:
-            self.logger.log_error(f"Failed to validate Gemini JSON response: {e}")
-            raise
-        
-        except Exception as e:
-            self.logger.log_error(f"Error calling Gemini API: {e}")
-            raise
+        return parsed_response.actions

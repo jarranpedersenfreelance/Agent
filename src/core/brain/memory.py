@@ -70,6 +70,10 @@ class Memory:
         if not self.memory.action_queue:
             return None
         return self.memory.action_queue.pop(0)
+    
+    def add_immediate_action(self, action: Action):
+        """Adds a single action to the front of the queue."""
+        self.memory.action_queue.insert(0, action)
 
     def add_action(self, action: Action):
         """Adds a single action to the end of the queue."""

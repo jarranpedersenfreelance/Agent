@@ -64,8 +64,8 @@ class AgentCore:
                         self.logger.log_info(f"Queued {len(new_actions)} new actions")
                     else:
                         self.logger.log_warning("Reason action returned no new actions")
-                        self.logger.log_info(f"Queuing Debug action")
-                        self.memory.add_action(ReasonAction(
+                        self.logger.log_info(f"Adding immediate Debug action")
+                        self.memory.add_immediate_action(ReasonAction(
                             type = ActionType.REASON,
                             task = "Debug why last reason action returned no actions",
                             explanation = "reasoning failed to return actions"
@@ -76,8 +76,8 @@ class AgentCore:
 
             except Exception as e:
                 self.logger.log_error(f"Failed to execute action {action.type.name}: {e}")
-                self.logger.log_info(f"Queuing Debug action")
-                self.memory.add_action(ReasonAction(
+                self.logger.log_info(f"Adding immediate Debug action")
+                self.memory.add_immediate_action(ReasonAction(
                     type = ActionType.REASON,
                     task = "Debug why last action failed",
                     explanation = "action failed"

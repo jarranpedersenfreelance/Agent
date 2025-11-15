@@ -79,7 +79,7 @@ class ActionHandler:
         
         write_file(file_path, contents)
         mem_files = self.memory.get_files()
-        mem_files.file_contents[file_path] = contents
+        mem_files[file_path] = contents
 
     def _handle_delete_file(self, action: DeleteFileAction):
         """Handles the DELETE_FILE action."""
