@@ -20,7 +20,7 @@ from core.brain.memory import Memory
 # --- Pydantic Models for LLM Response Validation ---
 
 AnyAction = Annotated[
-    Union[ReasonAction, ThinkAction, RunToolAction, ReadFileAction, WriteFileAction, DeleteFileAction, Action],
+    Union[ReasonAction, ThinkAction, RunToolAction, ReadFileAction, WriteFileAction, DeleteFileAction],
     Field(discriminator='type')
 ]
 

@@ -3,7 +3,7 @@ from typing import Dict, Any
 
 from core.logger import Logger
 from core.utilities import read_file, yaml_safe_load
-from core.definitions.models import ActionType, Count, ReasonAction, ReasonActionArgs
+from core.definitions.models import ActionType, Count, ReasonAction
 from core.brain.memory import Memory
 from core.brain.reason import Reason
 from core.execution.action_handler import ActionHandler
@@ -57,7 +57,7 @@ class AgentCore:
                         self.logger.log_info("Reason limit reached, Agent terminating")
                         break
 
-                    self.logger.log_action(action, action.arguments.task)
+                    self.logger.log_action(action, action.task)
                     new_actions = self.reason.get_next_actions(action)
                     if new_actions:
                         self.memory.add_actions(new_actions)
