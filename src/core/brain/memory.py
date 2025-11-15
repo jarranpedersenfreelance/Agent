@@ -69,3 +69,23 @@ class Memory:
         """Adds a list of actions to the end of the queue."""
         if actions:
             self.memory.action_queue.extend(actions)
+
+    def add_thought(self, label: str, thought: str):
+        """Adds or overwrites an indexed thought."""
+        self.memory.thoughts[label] = thought
+
+    def list_thoughts(self) -> List[str]:
+        """Lists all thought labels."""
+        return list(self.memory.thoughts.keys())
+    
+    def get_thought(self, label: str) -> str:
+        """Gets the content of a single thought."""
+        return self.memory.thoughts[label]
+    
+    def remove_thought(self, label: str):
+        """Removes a single thought."""
+        del self.memory.thoughts[label]
+
+    def forget(self):
+        """Removes all thoughts."""
+        self.memory.thoughts = {}

@@ -1,6 +1,8 @@
+import os
+import importlib
 from typing import Dict, Any
 from core.logger import Logger
-from core.definitions.models import Action, ReadFileAction, WriteFileAction, DeleteFileAction
+from core.definitions.models import Action, RunScriptAction, ReadFileAction, WriteFileAction, DeleteFileAction
 from core.brain.memory import Memory
 from core.utilities import read_file, write_file, delete_file
 
@@ -23,6 +25,32 @@ class ActionHandler:
     def _handle_no_op(self, action: Action):
         """Handles the NO_OP action."""
         self.logger.log_action(action, "")
+
+    def _handle_run_script(self, action: RunScriptAction):
+        """Handles the RUN_SCRIPT action."""
+        file_path = action.file_path
+        self.logger.log_action(action, f"{file_path} with args: {str(action.arguments)} - {action.explanation}")
+
+        if not file_path:
+            raise ValueError("RUN_SCRIPT action requires 'file_path' argument.")
+        
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"Script file not found: {file_path}")
+
+        spec = importlib.util.spec_from_file_location("dynamic_module", file_path)
+        if spec is None:
+            raise ImportError(f"Could not create module specification for {file_path}")
+
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        if not hasattr(module, 'main'):
+            raise AttributeError(f"Script {file_path} must define a 'main' function.")
+
+        module.main(action.arguments)
+
+
+        
 
     def _handle_read_file(self, action: ReadFileAction):
         """Handles the READ_FILE action."""

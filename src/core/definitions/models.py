@@ -17,6 +17,7 @@ class ActionType(str, Enum):
     READ_FILE = 'READ_FILE'
     WRITE_FILE = 'WRITE_FILE'
     DELETE_FILE = 'DELETE_FILE'
+    RUN_SCRIPT = 'RUN_SCRIPT'
     NO_OP = 'NO_OP'
 
 class Action(BaseModel):
@@ -29,6 +30,7 @@ class Mem(BaseModel):
     action_queue: List[Action] = []
     counters: Dict[Count, int] = {}
     file_contents: Dict[str, str] = {}
+    thoughts: Dict [str, str] = {}
     last_memorized: float = 0
 
 class ReasonActionArgs(BaseModel):
@@ -38,6 +40,12 @@ class ReasonAction(Action):
     """Represents the Reason action."""
     type: Literal[ActionType.REASON] = ActionType.REASON
     arguments: ReasonActionArgs = ReasonActionArgs()
+
+class RunScriptAction(Action):
+    """Represents the RunScript action."""
+    type: Literal[ActionType.RUN_SCRIPT] = ActionType.RUN_SCRIPT
+    file_path: str = ""
+    arguments: Dict[str, str] = {}
 
 class FileArgs(BaseModel):
     file_path: str = ""
