@@ -8,6 +8,7 @@ class Logger:
     
     def __init__(self, constants: Dict[str, Any], mock: bool = False):
         self.constants = constants
+        self.mock = mock
         self.log_level = constants['LOG_LEVEL']
 
         if not mock:
@@ -28,8 +29,8 @@ class Logger:
         print(log_str)
 
         time_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")
-        timed_log_str = f"[{time_str}]{log_str}"
-        append_file(self.log_file, timed_log_str)
+        file_log_str = f"[{time_str}]{log_str}\n"
+        append_file(self.log_file, file_log_str)
 
     def log_error(self, msg: str):
         self._log(LogType.ERROR, msg)

@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Union
 from core.logger import Logger
-from core.definitions.models import Mem, Count, Action, ActionType
+from core.definitions.models import Mem, Count, Action, ActionType, ReasonAction
 from core.utilities import json_typed_load, json_dump, current_timestamp, scan_workspace
 
 class Memory:
@@ -9,6 +9,7 @@ class Memory:
     def __init__(self, constants: Dict[str, Any], logger: Logger, mock: bool = False):
         self.constants = constants
         self.logger = logger
+        self.mock = mock
         if not mock:
             self.memory_file = self.constants['FILE_PATHS']['MEMORY_FILE']
             self.memory = json_typed_load(Mem, self.memory_file)
@@ -22,10 +23,10 @@ class Memory:
             
         # Initialize file_contents with file structure if empty
         if (not self.memory.file_contents):
-            print("INFO: Initializing file structure in memory...")
+            self.logger.log_info("Initializing file structure in memory")
             file_paths = scan_workspace(root_dir=".")
             self.memory.file_contents = {path: "" for path in file_paths}
-            print(f"INFO: Tracked {len(file_paths)} files.")
+            self.logger.log_info(f"Tracked {len(file_paths)} files")
 
     def memorize(self):
         """Saves memory to disk."""
@@ -49,10 +50,9 @@ class Memory:
 
     def reset_actions(self):
         starting_task = self.constants['AGENT']['STARTING_TASK']
-        initial_action = Action(
-            type=ActionType.REASON, 
-            arguments={"task": starting_task}
-        )
+        initial_action = ReasonAction()
+        initial_action.arguments.task = starting_task
+        initial_action.explanation = "initial action"
         self.memory.action_queue = [initial_action]
 
     def pop_action(self) -> Union[Action, None]:

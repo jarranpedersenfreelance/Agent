@@ -36,7 +36,7 @@ class ReasonActionArgs(BaseModel):
 
 class ReasonAction(Action):
     """Represents the Reason action."""
-    type = ActionType.REASON
+    type: Literal[ActionType.REASON] = ActionType.REASON
     arguments: ReasonActionArgs = ReasonActionArgs()
 
 class FileArgs(BaseModel):
@@ -45,15 +45,15 @@ class FileArgs(BaseModel):
 
 class ReadFileAction(Action):
     """Represents the ReadFile action."""
-    type = ActionType.READ_FILE
+    type: Literal[ActionType.READ_FILE] = ActionType.READ_FILE
     arguments: FileArgs = FileArgs()
 
 class WriteFileAction(Action):
     """Represents the WriteFile action."""
-    type = ActionType.READ_FILE
+    type: Literal[ActionType.WRITE_FILE] = ActionType.WRITE_FILE
     arguments: FileArgs = FileArgs()
 
 class DeleteFileAction(Action):
     """Represents the DeleteFile action."""
-    type = ActionType.DELETE_FILE
+    type: Literal[ActionType.DELETE_FILE] = ActionType.DELETE_FILE
     arguments: FileArgs = FileArgs()

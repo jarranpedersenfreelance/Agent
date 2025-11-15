@@ -18,6 +18,7 @@ class AgentCore:
     
     def __init__(self, constants: Dict[str, Any], mock = False):
         self.constants = constants
+        self.mock = mock
         self.logger = Logger(constants, mock)
         self.agent_principles = read_file(self.constants['FILE_PATHS']['AGENT_PRINCIPLES_FILE'])
         self.logger.log_info("Initializing AgentCore")
@@ -46,18 +47,19 @@ class AgentCore:
                     self.memory.add_action(ReasonAction(
                         type = ActionType.REASON,
                         arguments = ReasonActionArgs(
-                            task = "Plan"
+                            task = "Plan",
+                            explanation = "queue was empty"
                         )
                     ))
                 
-                elif action.type == ActionType.REASON:
+                elif isinstance(action, ReasonAction):
                     reason_count = self.memory.inc_count(Count.REASON)
                     
                     if reason_count == max_steps:
                         self.logger.log_info("Reason limit reached, Agent terminating")
                         break
 
-                    self.logger.log_action(action, action.arguments['task'])
+                    self.logger.log_action(action, action.arguments.task)
                     new_actions = self.reason.get_next_actions(action)
                     if new_actions:
                         self.memory.add_actions(new_actions)
@@ -68,7 +70,8 @@ class AgentCore:
                         self.memory.add_action(ReasonAction(
                             type = ActionType.REASON,
                             arguments = ReasonActionArgs(
-                                task = "Debug why last reason action returned no actions"
+                                task = "Debug why last reason action returned no actions",
+                                explanation = "reasoning failed"
                             )
                         ))
 
@@ -81,7 +84,8 @@ class AgentCore:
                 self.memory.add_action(ReasonAction(
                     type = ActionType.REASON,
                     arguments = ReasonActionArgs(
-                        task = "Debug why last action failed"
+                        task = "Debug why last action failed",
+                        explanation = "action failed"
                     )
                 ))
 

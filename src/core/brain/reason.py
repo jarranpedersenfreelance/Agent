@@ -2,7 +2,7 @@ import os
 from typing import Any, Dict, List
 from google import genai
 from core.logger import Logger
-from core.definitions.models import Action
+from core.definitions.models import Action, ReasonAction
 from core.brain.memory import Memory
 
 class Reason:
@@ -19,7 +19,7 @@ class Reason:
         self.memory = memory
         self.gemini = Gemini(constants, principles, memory)
     
-    def get_next_actions(self, current_action: Action) -> List[Action]:
+    def get_next_actions(self, current_action: ReasonAction) -> List[Action]:
         # TODO Add local reasoning before elevating to Gemini
         return self.gemini.get_next_actions(current_action)
 
@@ -41,13 +41,13 @@ class Gemini:
             raise ValueError("GEMINI_API_KEY environment variable not set. Cannot use REASON action.")
         self.client = genai.Client(api_key=self.api_key)
 
-    def _build_context_prompt(self, current_action: Action) -> str:
+    def _build_context_prompt(self, current_action: ReasonAction) -> str:
         """Constructs the comprehensive prompt for the LLM."""
         # TODO construct the prompt out of agent principles, current_action, and memory
         
         return ""
 
-    def get_next_actions(self, current_action: Action) -> List[Action]:
+    def get_next_actions(self, current_action: ReasonAction) -> List[Action]:
         """
         Calls the Gemini API to get the next list of actions.
         """
