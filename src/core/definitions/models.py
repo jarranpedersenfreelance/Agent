@@ -59,10 +59,17 @@ class RunToolAction(Action):
     tool_class: str = ""
     arguments: Dict[str, Any] = {}
 
+class ToDoType(str, Enum):
+    INSERT = 'INSERT'
+    APPEND = 'APPEND'
+    REMOVE = 'REMOVE'
+    NONE = 'NONE'
+
 class UpdateToDoAction(Action):
     """Represents the UpdateToDo action."""
     type: Literal[ActionType.UPDATE_TODO] = ActionType.UPDATE_TODO
-    new_todo: List[str] = []
+    todo_type: ToDoType = ToDoType.NONE
+    todo_item: str = ""
 
 class ReadFileAction(Action):
     """Represents the ReadFile action."""

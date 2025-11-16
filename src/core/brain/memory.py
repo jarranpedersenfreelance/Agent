@@ -60,12 +60,16 @@ class Memory:
         del self.memory.file_contents[file_path]
     
     def get_todo_list(self) -> List[str]:
-        """Returns ToDo list."""
         return self.memory.todo.copy()
-    
-    def update_todo_list(self, new_todo: List[str]):
-        """Updates ToDo list."""
-        self.memory.todo = new_todo
+
+    def remove_todo(self):
+        self.memory.todo.pop(0)
+
+    def add_todo(self, item: str):
+        self.memory.todo.append(item)
+
+    def add_immediate_todo(self, item: str):
+        self.memory.todo.insert(0, item)
 
     def get_count(self, counter: Count) -> int:
         return self.memory.counters[counter]
@@ -86,15 +90,28 @@ class Memory:
         action.explanation = explanation
         self.memory.action_queue = [action]
 
+    def empty_actions(self):
+        self.memory.action_queue = []
+
     def pop_action(self) -> Union[Action, None]:
         """Removes and returns the next action from the front of the queue."""
         if not self.memory.action_queue:
             return None
         return self.memory.action_queue.pop(0)
+    
+    def pop_last_action(self) -> Union[Action, None]:
+        """Removes and returns the last action from the end of the queue."""
+        if not self.memory.action_queue:
+            return None
+        return self.memory.action_queue.pop()
 
     def add_action(self, action: Action):
         """Adds a single action to the end of the queue."""
         self.memory.action_queue.append(action)
+
+    def prepend_action(self, action: Action):
+        """Adds a single action to the start of the queue."""
+        self.memory.action_queue.insert(0,action)
 
     def add_actions(self, actions: List[Action]):
         """Adds a list of actions to the end of the queue."""

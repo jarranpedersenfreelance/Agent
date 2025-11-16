@@ -14,8 +14,7 @@ from core.definitions.models import (
     ReadFileAction, 
     WriteFileAction, 
     DeleteFileAction,
-    UpdateToDoAction,
-    TerminateAction
+    UpdateToDoAction
 )
 from core.brain.memory import Memory
 
@@ -25,7 +24,7 @@ AnyAction = Annotated[
     Union[
       ReasonAction, ThinkAction, RunToolAction, 
       ReadFileAction, WriteFileAction, DeleteFileAction,
-      TerminateAction, UpdateToDoAction
+      UpdateToDoAction
     ],
     Field(discriminator='type')
 ]
@@ -79,11 +78,8 @@ SCHEMA_DEFINITION = """
     {
       "type": "UPDATE_TODO",
       "explanation": "<Why you are updating the todo list>",
-      "todo": "A List[str] that will replace the current todo list"
-    },
-    {
-      "type": "TERMINATE",
-      "explanation": "<Why you are terminating>"
+      "todo_type": "<Literal['INSERT', 'APPEND', 'REMOVE'] that specifies how to update the todo list>"
+      "todo_item": "<str content for new list item if doing INSERT (front of queue) or APPEND (back of queue)>"
     }
   ]
 }
@@ -168,7 +164,7 @@ I am an AI Agent. Your task is to decide my next actions to take based on the fo
 You *must* respond with *only* a valid JSON object.
 The JSON object must match the schema listed below, containing a single key "actions" which is a list of one or more action objects.
 You *must* respond with *at least* one action.
-The *last* action in the list *must* be "REASON" or "TERMINATE".
+The *last* action in the list *must* be "REASON".
 
 # YOUR RESPONSE SCHEMA:
 {SCHEMA_DEFINITION}
@@ -176,8 +172,10 @@ The *last* action in the list *must* be "REASON" or "TERMINATE".
 # YOUR LOGIC:
 Use the memory schema to parse the information in the provided portions of my memory
 Use the information in my memory to develop a plan to accomplish my current task
+After the current task, I should work on the tasks in my todo list
 The plan should adhere to my agent principles
 Return the plan as your action list response
+NOTE: I will TERMINATE when my todo list is empty, *only* empty todo list after verifying all tasks are truly complete.
 
 # MY AGENT PRINCIPLES:
 {self.principles}
@@ -190,7 +188,7 @@ Return the plan as your action list response
 {constants_content}
 
 # MY MEMORY SCHEMA
-{
+{{
   "action_queue": "<current List[Action] action queue>",
   "counters": "<Dict[str, int] counter variables>",
   "file_contents": "Dict[str, str] that represents complete file structure, relevant file contents",
@@ -198,7 +196,7 @@ Return the plan as your action list response
   "logs": "<A List[str] of recent log statements>",
   "todo": "<A List[str] that represents my todo list>",
   "last_memorized": "<A str timestamp of the last time my memory was saved to disk>"
-}
+}}
 (I have all file contents but am only sending those relevant to the task)
 (I have more thoughts but am only sending those relevant to the task)
 (I am only sending the last {self.constants['AGENT']['LOG_TAIL_COUNT']} lines of logs)
@@ -227,16 +225,5 @@ Return the plan as your action list response
         if not parsed_response.actions:
             self.logger.log_warning("Gemini returned an empty action list.")
             return [] # Will trigger a debug action in core
-
-        # Validate that the last action is REASON
-        last_action = parsed_response.actions[-1]
-        if last_action.type != ActionType.REASON and last_action.type != ActionType.TERMINATE:
-            self.logger.log_warning("Gemini response did not end with a REASON action. Appending one.")
-            parsed_response.actions.append(
-                ReasonAction(
-                    explanation="Default action because LLM response did not end with REASON.",
-                    task="Review and correct the previous action plan."
-                )
-            )
             
         return parsed_response.actions

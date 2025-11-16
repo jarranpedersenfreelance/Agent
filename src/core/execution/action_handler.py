@@ -1,6 +1,15 @@
 from typing import Dict, Any
 from core.logger import Logger
-from core.definitions.models import Action, ThinkAction, RunToolAction, UpdateToDoAction, ReadFileAction, WriteFileAction, DeleteFileAction
+from core.definitions.models import (
+    Action, 
+    ThinkAction, 
+    RunToolAction, 
+    ToDoType,
+    UpdateToDoAction, 
+    ReadFileAction, 
+    WriteFileAction, 
+    DeleteFileAction
+)
 from core.brain.memory import Memory
 from core.utilities import read_file, write_file, delete_file
 from core.execution.toolbox import ToolBox
@@ -53,9 +62,21 @@ class ActionHandler:
         self.toolbox.run_tool(module, tool_class, args)
 
     def _handle_update_todo(self, action: UpdateToDoAction):
-        """Handles the RUN_TOOL action."""
-        todo = self.memory.update_todo_list(action.new_todo)
-        self.logger.log_action(action, f"{str(action.new_todo)} - {action.explanation}")
+        """Handles the UPDATE_TODO action."""
+        if action.todo_type == ToDoType.NONE:
+            return
+        
+        elif action.todo_type == ToDoType.APPEND:
+            self.memory.add_todo(action.todo_item)
+            self.logger.log_action(action, f"{action.todo_type} {action.todo_item} - {action.explanation}")
+
+        elif action.todo_type == ToDoType.INSERT:
+            self.memory.add_immediate_todo(action.todo_item)
+            self.logger.log_action(action, f"{action.todo_type} {action.todo_item} - {action.explanation}")
+
+        elif action.todo_type == ToDoType.REMOVE:
+            self.memory.remove_todo()
+            self.logger.log_action(action, f"{action.todo_type} - {action.explanation}")
 
     def _handle_read_file(self, action: ReadFileAction):
         """Handles the READ_FILE action."""
