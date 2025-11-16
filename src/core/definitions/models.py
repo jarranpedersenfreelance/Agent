@@ -20,6 +20,7 @@ class ActionType(str, Enum):
     DELETE_FILE = 'DELETE_FILE'
     RUN_TOOL = 'RUN_TOOL'
     UPDATE_TODO = 'UPDATE_TODO'
+    TERMINATE = 'TERMINATE'
     NO_OP = 'NO_OP'
 
 class Action(BaseModel):
@@ -78,3 +79,7 @@ class DeleteFileAction(Action):
     """Represents the DeleteFile action."""
     type: Literal[ActionType.DELETE_FILE] = ActionType.DELETE_FILE
     file_path: str = ""
+
+class TerminateAction(Action):
+    """Represents the Terminate action."""
+    type: Literal[ActionType.TERMINATE] = ActionType.TERMINATE

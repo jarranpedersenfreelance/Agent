@@ -3,7 +3,7 @@ from typing import Dict, Any
 
 from core.logger import Logger
 from core.utilities import read_file, yaml_safe_load
-from core.definitions.models import ActionType, Count, ReasonAction
+from core.definitions.models import Count, ReasonAction, TerminateAction
 from core.brain.memory import Memory
 from core.brain.reason import Reason
 from core.execution.action_handler import ActionHandler
@@ -46,6 +46,10 @@ class AgentCore:
                     self.logger.log_warning("Ran out of actions")
                     self.logger.log_info(f"Resetting actions, adding [REASON: Plan] action")
                     self.memory.reset_actions("Plan", "action queue was empty")
+
+                elif isinstance(action, TerminateAction):
+                    self.logger.log_info("TERMINATE action in queue, Agent terminating")
+                    break
                 
                 elif isinstance(action, ReasonAction):
                     reason_count = self.memory.inc_count(Count.REASON)

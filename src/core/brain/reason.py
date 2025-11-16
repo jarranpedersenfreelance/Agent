@@ -2,7 +2,7 @@ import os
 import json
 from typing import Any, Dict, List, Union, Annotated
 import google.generativeai as genai
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field
 
 from core.logger import Logger
 from core.definitions.models import (
@@ -13,14 +13,20 @@ from core.definitions.models import (
     RunToolAction, 
     ReadFileAction, 
     WriteFileAction, 
-    DeleteFileAction
+    DeleteFileAction,
+    UpdateToDoAction,
+    TerminateAction
 )
 from core.brain.memory import Memory
 
 # --- Pydantic Models for LLM Response Validation ---
 
 AnyAction = Annotated[
-    Union[ReasonAction, ThinkAction, RunToolAction, ReadFileAction, WriteFileAction, DeleteFileAction],
+    Union[
+      ReasonAction, ThinkAction, RunToolAction, 
+      ReadFileAction, WriteFileAction, DeleteFileAction,
+      TerminateAction, UpdateToDoAction
+    ],
     Field(discriminator='type')
 ]
 
@@ -68,6 +74,15 @@ SCHEMA_DEFINITION = """
       "type": "DELETE_FILE",
       "explanation": "<Why you are deleting this file>",
       "file_path": "<path/to/file>"
+    },
+    {
+      "type": "UPDATE_TODO",
+      "explanation": "<Why you are updating the todo list>",
+      "todo": "A List[str] that will replace the current todo list"
+    },
+    {
+      "type": "TERMINATE",
+      "explanation": "<Why you are terminating>"
     }
   ]
 }
