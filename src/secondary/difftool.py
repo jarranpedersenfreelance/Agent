@@ -23,7 +23,7 @@ class DiffTool(Tool):
                     An optional file path to create diff files other than update_request.patch
         
         Returns:
-            str: ""
+            str: diff file contents
         """
         files_to_diff: Dict[str, Dict[str, str]] = args.get("files_to_diff", {})
 
@@ -48,4 +48,4 @@ class DiffTool(Tool):
         else:
             write_file(self.constants['FILE_PATHS']['PATCH_FILE'], file_content)
 
-        return ""
+        return file_content

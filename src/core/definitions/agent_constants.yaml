@@ -4,7 +4,7 @@ LOG_LEVEL: 4 # INFO
 
 FILE_PATHS:
     AGENT_PRINCIPLES_FILE: "core/definitions/agent_principles.txt"
-    PATCH_FILE: "update_request.patch"
+    PATCH_FILE: "data/update_request.patch"
     MEMORY_FILE: "data/memory.json"
     SRC_MEMORY_FILE: "/app/src/data/memory.json"
     TEST_MEMORY_FILE: "data/test/memory.json"

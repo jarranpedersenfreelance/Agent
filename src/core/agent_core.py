@@ -85,13 +85,13 @@ class AgentCore:
                     if new_actions:
                         last_action = new_actions[-1]
                         if last_action.type != ActionType.REASON:
-                            self._debug(self, "last reason action returned an action list that didn't end with a REASON action")
+                            self._debug("last reason action returned an action list that didn't end with a REASON action")
                         
                         else:
                             self.memory.add_actions(new_actions)
                             self.logger.log_info(f"Queued {len(new_actions)} new actions")
                     else:
-                        self._debug(self, "last reason action returned no actions")
+                        self._debug("last reason action returned no actions")
 
                 else:
                     self.action_handler.exec_action(action)
@@ -99,7 +99,7 @@ class AgentCore:
             except Exception as e:
                 self.logger.log_error(f"Failed to execute action {action.type.name}: {e}")
                 self.logger.log_error(f"Stack Trace: {traceback.format_exc()}")
-                self._debug(self, f"failed to execute action {action.type.name}")
+                self._debug(f"failed to execute action {action.type.name}")
 
 # --- Main Entry Point ---
 if __name__ == "__main__":
