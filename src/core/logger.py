@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 from core.definitions.models import LogType, Action
 from core.utilities import append_file, current_timestamp, read_file_tail
 
@@ -31,8 +31,8 @@ class Logger:
         file_log_str = f"[{time_str}]{log_str}\n"
         append_file(self.log_file, file_log_str)
 
-    def recent_logs(self) -> str:
-        read_file_tail(self.log_file, self.constants['AGENT']['LOG_TAIL_COUNT'])
+    def recent_logs(self) -> List[str]:
+        return read_file_tail(self.log_file, self.constants['AGENT']['LOG_TAIL_COUNT'])
 
     def log_error(self, msg: str):
         self._log(LogType.ERROR, msg)

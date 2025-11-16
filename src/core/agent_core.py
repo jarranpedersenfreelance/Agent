@@ -74,14 +74,9 @@ class AgentCore:
                 self.logger.log_error(f"Failed to execute action {action.type.name}: {e}")
                 self.logger.log_info(f"Resetting actions, adding [REASON: Debug] action")
                 self.memory.reset_actions(
-                    "Debug why last reason action returned no actions", 
-                    "reasoning failed to return actions"
+                    "Debug why last action failed", 
+                    "action failed"
                 )
-                self.memory.add_immediate_action(ReasonAction(
-                    type = ActionType.REASON,
-                    task = "Debug why last action failed",
-                    explanation = "action failed"
-                ))
 
 
 # --- Main Entry Point ---

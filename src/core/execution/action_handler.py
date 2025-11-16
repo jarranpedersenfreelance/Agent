@@ -33,7 +33,7 @@ class ActionHandler:
         is_delete = action.delete
         op_string = 'DELETE' if is_delete else 'INSERT'
 
-        self.logger.log_action(action, f"{label} - {op_string} - {action.explanation}")
+        self.logger.log_action(action, f"{op_string} {label} - {action.explanation}")
         thoughts = self.memory.list_thoughts()
 
         if is_delete:

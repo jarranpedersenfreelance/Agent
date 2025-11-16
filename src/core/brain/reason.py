@@ -137,7 +137,7 @@ class Gemini:
             else None
             for k in mem_files
           },
-          "thoughts": {k: mem_files[k] for k in current_action.thoughts_to_send},
+          "thoughts": {k: self.memory.get_thought(k) for k in current_action.thoughts_to_send},
           "logs": self.memory.load_logs(),
           "last_memorized": self.memory.get_last_memorized()
         }
