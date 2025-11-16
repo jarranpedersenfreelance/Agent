@@ -62,7 +62,7 @@ function func_cleanup_dangling_images() {
 
 # --- CORE DEPLOYMENT LOGIC ---
 
-function func_base_deploy() {
+function func_pre_deploy() {
     echo "Ensuring clean slate..."
 
     # Cleanup Logs
@@ -80,6 +80,14 @@ function func_base_deploy() {
     
     # Copy Code and Initial State/Data & Set Permissions
     func_copy_initial_files
+}
+
+function func_deploy() {
+    echo "--- DEPLOYMENT START: $(date) ---"
+    echo ""
+
+    # Clean and Re-Copy Files
+    func_pre_deploy
 
     # Build and Start
     echo "Building and starting the '$SERVICE_NAME' container..."
@@ -87,12 +95,7 @@ function func_base_deploy() {
 
     # Clean up dangling images created by the build process
     func_cleanup_dangling_images
-}
 
-function func_deploy() {
-    echo "--- DEPLOYMENT START: $(date) ---"
-    echo ""
-    func_base_deploy
     echo ""
     echo "--- DEPLOYMENT END: $(date) ---"
 }
@@ -101,8 +104,8 @@ function func_todo_deploy() {
     echo "--- DEPLOYMENT START: $(date) ---"
     echo ""
 
-    # copy initial memory file if empty (after clean)
-    func_copy_initial_files
+    # Clean and Re-Copy Files
+    func_pre_deploy
     
     # copy to_do.txt contents to memory.json ToDo field as List[str]
     echo "Injecting ToDo list from $TODO_FILE into $MEMORY_FILE..."
@@ -145,7 +148,13 @@ function func_todo_deploy() {
         return 1
     fi
 
-    func_base_deploy
+    # Build and Start
+    echo "Building and starting the '$SERVICE_NAME' container..."
+    docker-compose up -d --build "$SERVICE_NAME"
+
+    # Clean up dangling images created by the build process
+    func_cleanup_dangling_images
+    
     echo ""
     echo "--- DEPLOYMENT END: $(date) ---"
 }
