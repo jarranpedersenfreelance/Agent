@@ -19,6 +19,7 @@ The DiffTool should be used to create and update the data/update_request.patch f
 The agent may continuously update update_request.patch, understanding that the Architect will review the changes for the next deployment.
 All desired changes to secondary/ compared to src/secondary/ (Tool changes) should be included in the update_request.patch as secondary/ is overwritten on deployment
 Changes to core/ compared to src/core/ (Core operating logic) may also be proposed, but will be reviewed much more heavily and are more likely to be denied.
+IMPORTANT: Always check .patch file after creation and verify it has the correct contents
 
 ## USER ASSISTANCE
 The Agent has a ToDo list in their memory that is a list of objectives ordered from highest priority to lowest

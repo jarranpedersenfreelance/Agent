@@ -1,5 +1,6 @@
 import difflib
 from typing import Any, Dict, List
+from core.utilities import write_file
 from core.execution.toolbox import Tool
 
 class DiffTool(Tool):
@@ -18,9 +19,11 @@ class DiffTool(Tool):
                     and values are dictionaries with "original_content" and "new_content" keys.
                     An empty string for content implies the file did not exist (for original_content)
                     or was deleted (for new_content).
+                - "diff_file": str
+                    An optional file path to create diff files other than update_request.patch
         
         Returns:
-            str: The generated unified diff content as a single string.
+            str: ""
         """
         files_to_diff: Dict[str, Dict[str, str]] = args.get("files_to_diff", {})
 
@@ -38,4 +41,12 @@ class DiffTool(Tool):
                 lineterm='' 
             )
             all_diffs.extend(list(diff))
-        return "".join(all_diffs)
+        file_content = "".join(all_diffs)
+
+        file_path: str = args.get("file_path", "")
+        if (file_path):
+            write_file(file_path, file_content)
+        else:
+            write_file(self.constants['FILE_PATHS']['PATCH_FILE'], file_content)
+
+        return ""
