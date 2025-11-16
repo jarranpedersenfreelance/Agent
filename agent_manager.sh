@@ -6,6 +6,7 @@ CONTAINER_NAME="agent_container"
 SNAPSHOT_FILE="codebase_snapshot.txt"
 MEMORY_FILE="workspace/data/memory.json"
 TODO_FILE="to_do.txt"
+PATCH_FILE="workspace/data/update_request.patch"
 MAX_SNAPSHOT_SIZE=3000000 # ~3 MB (can increase up to 10)
 SNAPSHOT_EXCLUSIONS='workspace|*.git|.env|.DS_Store|to_do.txt'
 
@@ -192,15 +193,56 @@ function func_clean() {
     rm -rf workspace/*
 }
 
+function func_apply_patch() {
+    # Use the first argument as the patch file, or default to $PATCH_FILE
+    local patch_file="${1:-$PATCH_FILE}"
+
+    echo "--- APPLYING PATCH: $patch_file ---"
+
+    # Check for the 'patch' command
+    if ! command -v patch &> /dev/null; then
+        echo "ERROR: 'patch' command is required but was not found."
+        echo "Please install 'patch' (e.g., 'sudo apt-get install patch') and try again."
+        return 1
+    fi
+
+    # Check if the patch file exists
+    if [ ! -f "$patch_file" ]; then
+        echo "ERROR: Patch file not found at '$patch_file'."
+        return 1
+    fi
+
+    # Check if the src directory exists
+    if [ ! -d "src" ]; then
+        echo "ERROR: 'src/' directory not found. Are you in the project root?"
+        return 1
+    fi
+
+    echo "Applying $patch_file to src/ directory..."
+    # -d src: Apply patch relative to the 'src' directory
+    # -p1: Strip the 'a/' and 'b/' prefix (1 directory level) from paths in the patch file
+    patch -d src -p1 < "$patch_file"
+
+    if [ $? -eq 0 ]; then
+        echo "Patch applied successfully."
+    else
+        echo "WARNING: 'patch' command finished with errors."
+        echo "The patch may have been partially applied or rejected."
+        echo "Please review the output and your 'src/' files."
+    fi
+    echo "--- PATCH COMPLETE ---"
+}
+
 function usage() {
-    echo "Usage: ./agent_manager.sh <command>"
+    echo "Usage: ./agent_manager.sh <command> [args]"
     echo ""
     echo "Commands:"
-    echo "  deploy          : Deploy and start the agent."
-    echo "  todo-deploy          : Update ToDo list in agent memory, then deploy and start the agent."
-    echo "  clean           : Clear the workspace directory."
-    echo "  logs            : Display the most recent logs from the agent container."
-    echo "  snapshot        : Generate the codebase_snapshot.txt file for context upload."
+    echo "  deploy             : Deploy and start the agent."
+    echo "  todo-deploy        : Update ToDo list in agent memory, then deploy and start the agent."
+    echo "  apply-patch [file] : Apply a .patch file to the 'src/' directory. Uses $PATCH_FILE by default."
+    echo "  clean              : Clear the workspace directory."
+    echo "  logs               : Display the most recent logs from the agent container."
+    echo "  snapshot           : Generate the codebase_snapshot.txt file for context upload."
     echo ""
 }
 
@@ -226,6 +268,9 @@ case "$1" in
         ;;
     snapshot)
         func_snapshot
+        ;;
+    patch)
+        func_apply_patch "$2" # Pass the second argument (optional patch file)
         ;;
     *)
         usage
