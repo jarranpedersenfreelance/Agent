@@ -38,11 +38,4 @@ class DiffTool(Tool):
                 lineterm='' 
             )
             all_diffs.extend(list(diff))
-        
-from typing import Any, Dict
-from core.execution.toolbox import Tool
-
-class DiffTool(Tool):
-
-    def run(self, args: Dict[str, Any]):
-        pass
+        return "".join(all_diffs)

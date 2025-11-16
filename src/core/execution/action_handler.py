@@ -42,7 +42,7 @@ class ActionHandler:
             self.memory.remove_thought(label)
         
         else:
-            self.memory.add_thought(label, thought)
+            self.memory.set_thought(label, thought)
 
     def _handle_run_tool(self, action: RunToolAction):
         """Handles the RUN_TOOL action."""
@@ -81,7 +81,11 @@ class ActionHandler:
         if not file_path:
             raise ValueError("WRITE_FILE action requires 'file_path' argument.")
         
-        write_file(file_path, contents)
+        if action.use_thought:
+            write_file(file_path, self.memory.get_thought(action.use_thought))
+        else:
+            write_file(file_path, contents)
+
         self.memory.fill_file_contents(file_path, contents)
 
     def _handle_delete_file(self, action: DeleteFileAction):

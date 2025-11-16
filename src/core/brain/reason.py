@@ -68,6 +68,7 @@ SCHEMA_DEFINITION = """
       "type": "WRITE_FILE",
       "explanation": "<Why you are writing this file>",
       "file_path": "<path/to/file>",
+      "use_thought": "Thought label if using corresponding thought value as contents, will be used instead of contents",
       "contents": "<Full contents to write>"
     },
     {
@@ -182,7 +183,7 @@ I am an AI Agent. Your task is to decide my next actions to take based on the fo
 # YOUR RESPONSE:
 You *must* respond with *only* a valid JSON object.
 The JSON object must match the following schema, containing a single key "actions" which is a list of one or more action objects.
-The *last* action in the list *must* be a "REASON" action for the next step.
+The *last* action in the list *must* be a "REASON" action for the next step or a "TERMINATE" action.
 
 # SCHEMA:
 {SCHEMA_DEFINITION}
@@ -210,7 +211,8 @@ The *last* action in the list *must* be a "REASON" action for the next step.
             return [] # Will trigger a debug action in core
 
         # Validate that the last action is REASON
-        if parsed_response.actions[-1].type != ActionType.REASON:
+        last_action = parsed_response.actions[-1]
+        if last_action.type != ActionType.REASON and last_action.type != ActionType.TERMINATE:
             self.logger.log_warning("Gemini response did not end with a REASON action. Appending one.")
             parsed_response.actions.append(
                 ReasonAction(

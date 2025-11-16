@@ -73,6 +73,7 @@ class WriteFileAction(Action):
     """Represents the WriteFile action."""
     type: Literal[ActionType.WRITE_FILE] = ActionType.WRITE_FILE
     file_path: str = ""
+    use_thought: str = ""
     contents: str = ""
 
 class DeleteFileAction(Action):

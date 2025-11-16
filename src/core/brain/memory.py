@@ -105,7 +105,7 @@ class Memory:
         """Gets a copy of the action queue."""
         return self.memory.action_queue.copy()
 
-    def add_thought(self, label: str, thought: str):
+    def set_thought(self, label: str, thought: str):
         """Adds or overwrites an indexed thought."""
         self.memory.thoughts[label] = thought
 

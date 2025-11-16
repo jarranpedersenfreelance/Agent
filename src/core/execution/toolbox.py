@@ -9,8 +9,8 @@ class Tool:
         self.logger = logger
         self.memory = memory
 
-    def run(self, args: Dict[str, Any] = {}):
-        pass
+    def run(self, args: Dict[str, Any] = {}) -> str:
+        return ""
 
 
 class ToolBox:
@@ -29,9 +29,10 @@ class ToolBox:
         if tool and issubclass(tool, Tool):
             tool_instance = tool(self.constants, self.logger, self.memory)
             if (args):
-                tool_instance.run(args)
+                output = tool_instance.run(args)
             else:
-                tool_instance.run()
+                output = tool_instance.run()
+            self.memory.set_thought(self.constants['AGENT']['TOOL_OUTPUT_THOUGHT'], output)
                 
         else:
             raise ValueError("RUN_TOOL tried to run a tool class that doesn't exist.")
