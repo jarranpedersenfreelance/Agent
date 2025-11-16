@@ -20,8 +20,8 @@ class ToolBox:
         self.logger = logger
         self.memory = memory
 
-    def run_tool(self, module_path: str, tool_class: str, args: Dict[str, Any]):
-        module = importlib.import_module(module_path)
+    def run_tool(self, module: str, tool_class: str, args: Dict[str, Any]):
+        module = importlib.import_module(module)
         if not module: 
             raise ValueError("RUN_TOOL tried to run a tool module that doesn't exist.")
         tool = getattr(module, tool_class)

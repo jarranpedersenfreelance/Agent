@@ -46,11 +46,11 @@ class ActionHandler:
 
     def _handle_run_tool(self, action: RunToolAction):
         """Handles the RUN_TOOL action."""
-        module_path = action.module_path
+        module = action.module
         tool_class = action.tool_class
         args = action.arguments
         self.logger.log_action(action, f"{tool_class} with args: {str(args)} - {action.explanation}")
-        self.toolbox.run_tool(module_path, tool_class, args)
+        self.toolbox.run_tool(module, tool_class, args)
 
     def _handle_update_todo(self, action: UpdateToDoAction):
         """Handles the RUN_TOOL action."""

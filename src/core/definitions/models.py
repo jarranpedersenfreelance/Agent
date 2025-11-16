@@ -55,7 +55,7 @@ class ThinkAction(Action):
 class RunToolAction(Action):
     """Represents the RunTool action."""
     type: Literal[ActionType.RUN_TOOL] = ActionType.RUN_TOOL
-    module_path: str = ""
+    module: str = ""
     tool_class: str = ""
     arguments: Dict[str, Any] = {}
 

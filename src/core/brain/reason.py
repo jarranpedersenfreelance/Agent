@@ -55,7 +55,7 @@ SCHEMA_DEFINITION = """
     {
       "type": "RUN_TOOL",
       "explanation": "<Why you selected this task>",
-      "module_path": "<path/to/file>"
+      "module": "<python.tool.module>"
       "tool class": "<Type for the Tool>"
       "arguments": "<A Dict[str, Any] of arguments for the Tool execution>"
     },
