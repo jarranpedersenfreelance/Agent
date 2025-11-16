@@ -176,6 +176,7 @@ After the current task, I should work on the tasks in my todo list
 The plan should adhere to my agent principles
 Return the plan as your action list response
 NOTE: I will TERMINATE when my todo list is empty, *only* empty todo list after verifying all tasks are truly complete.
+IMPORTANT: DO NOT TRY TO WRITE_FILE IN core/ ONLY IN secondary/ OR data/
 
 # MY AGENT PRINCIPLES:
 {self.principles}
