@@ -101,7 +101,7 @@ function func_todo_deploy() {
     echo ""
 
     # copy initial memory file if empty (after clean)
-    cp -R -n src/data/* workspace/data/
+    func_copy_initial_files
     
     # copy to_do.txt contents to memory.json ToDo field as List[str]
     echo "Injecting ToDo list from $TODO_FILE into $MEMORY_FILE..."
@@ -115,24 +115,28 @@ function func_todo_deploy() {
             return 1
         fi
         
-        # Read lines, filter out empty/whitespace-only lines, remove carriage returns, and convert to a JSON array string using jq.
-        TODO_LIST_JSON=$(grep -v '^\s*$' "$TODO_FILE" | tr -d '\r' | jq -R -s '.' | jq -c '. | map(select(. != ""))')
+        # read list from file as json List[str]
+        TODO_LIST_JSON=$(jq -R -s 'split("\n") | map(select(length > 0)) | map(select(test("^\\s*$") | not))' "$TODO_FILE")
         
-        # Fallback if the file is empty or only whitespace
-        if [ -z "$TODO_LIST_JSON" ] || [ "$TODO_LIST_JSON" = "null" ] || [ "$TODO_LIST_JSON" = "[null]" ]; then
-            TODO_LIST_JSON="[]"
+        # check if memory.json exists
+        if [ ! -f "$MEMORY_FILE" ]; then
+            echo "ERROR: $MEMORY_FILE is missing after deployment. Cannot inject ToDo list."
+            echo ""
+            echo "--- DEPLOYMENT END: $(date) ---"
+            return 1
         fi
 
-        # Use jq to read memory.json, set the 'todo' field, and write back.
+        # use jq to read memory.json, set the 'todo' field, and write back.
         jq --argjson todo_array "$TODO_LIST_JSON" '. + {todo: $todo_array}' "$MEMORY_FILE" > temp.json
         
         if [ $? -eq 0 ]; then
             mv temp.json "$MEMORY_FILE"
-            echo "Successfully injected $(echo "$TODO_LIST_JSON" | jq '. | length') items into 'todo' field."
+            echo "Successfully injected $(echo "$TODO_LIST_JSON" | jq 'length') items into 'todo' field."
         else
             echo "ERROR: Failed to process $MEMORY_FILE with jq. Check memory.json structure."
             rm -f temp.json
         fi
+        
     else
         echo "ERROR: $TODO_FILE not found. Skipping ToDo list injection."
         echo ""
@@ -193,7 +197,7 @@ function usage() {
     echo ""
     echo "Commands:"
     echo "  deploy          : Deploy and start the agent."
-    echo "  deploy          : Update ToDo list in agent memory, then deploy and start the agent."
+    echo "  todo-deploy          : Update ToDo list in agent memory, then deploy and start the agent."
     echo "  clean           : Clear the workspace directory."
     echo "  logs            : Display the most recent logs from the agent container."
     echo "  snapshot        : Generate the codebase_snapshot.txt file for context upload."
@@ -211,7 +215,7 @@ case "$1" in
     deploy)
         func_deploy
         ;;
-    deploy-todo)
+    todo-deploy)
         func_todo_deploy
         ;;
     clean)
