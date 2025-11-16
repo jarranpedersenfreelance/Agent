@@ -164,29 +164,47 @@ class Gemini:
         prompt = f"""
 I am an AI Agent. Your task is to decide my next actions to take based on the following information.
 
-# AGENT PRINCIPLES:
+# YOUR RESPONSE:
+You *must* respond with *only* a valid JSON object.
+The JSON object must match the schema listed below, containing a single key "actions" which is a list of one or more action objects.
+You *must* respond with *at least* one action.
+The *last* action in the list *must* be "REASON" or "TERMINATE".
+
+# YOUR RESPONSE SCHEMA:
+{SCHEMA_DEFINITION}
+
+# YOUR LOGIC:
+Use the memory schema to parse the information in the provided portions of my memory
+Use the information in my memory to develop a plan to accomplish my current task
+The plan should adhere to my agent principles
+Return the plan as your action list response
+
+# MY AGENT PRINCIPLES:
 {self.principles}
 
-# CONSTANTS:
+# MY CURRENT TASK:
+{current_action.task}
+(This task was assigned with the explanation: "{current_action.explanation}")
+
+# MY CONSTANTS:
 {constants_content}
 
-# CURRENT MEMORY:
-{memory_content}
+# MY MEMORY SCHEMA
+{
+  "action_queue": "<current List[Action] action queue>",
+  "counters": "<Dict[str, int] counter variables>",
+  "file_contents": "Dict[str, str] that represents complete file structure, relevant file contents",
+  "thoughts": "<Dict[str, str] that represents my thoughts>",
+  "logs": "<A List[str] of recent log statements>",
+  "todo": "<A List[str] that represents my todo list>",
+  "last_memorized": "<A str timestamp of the last time my memory was saved to disk>"
+}
 (I have all file contents but am only sending those relevant to the task)
 (I have more thoughts but am only sending those relevant to the task)
 (I am only sending the last {self.constants['AGENT']['LOG_TAIL_COUNT']} lines of logs)
 
-# CURRENT TASK:
-{current_action.task}
-(This task was assigned with the explanation: "{current_action.explanation}")
-
-# YOUR RESPONSE:
-You *must* respond with *only* a valid JSON object.
-The JSON object must match the following schema, containing a single key "actions" which is a list of one or more action objects.
-The *last* action in the list *must* be a "REASON" action for the next step or a "TERMINATE" action.
-
-# SCHEMA:
-{SCHEMA_DEFINITION}
+# MY CURRENT MEMORY:
+{memory_content}
 """
         return prompt
 

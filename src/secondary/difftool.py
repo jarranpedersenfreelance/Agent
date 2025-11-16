@@ -37,8 +37,7 @@ class DiffTool(Tool):
                 original_content_lines,
                 new_content_lines,
                 fromfile=f"a/{file_path}",
-                tofile=f"b/{file_path}",
-                lineterm='' 
+                tofile=f"b/{file_path}"
             )
             all_diffs.extend(list(diff))
         file_content = "".join(all_diffs)
