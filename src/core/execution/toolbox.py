@@ -9,7 +9,7 @@ class Tool:
         self.logger = logger
         self.memory = memory
 
-    def run(self, args: Dict[str, Any]):
+    def run(self, args: Dict[str, Any] = {}):
         pass
 
 
@@ -24,8 +24,14 @@ class ToolBox:
         module = importlib.import_module(module)
         if not module: 
             raise ValueError("RUN_TOOL tried to run a tool module that doesn't exist.")
+        
         tool = getattr(module, tool_class)
-        if tool and isinstance(tool, Tool):
-            tool.run(args)
+        if tool and issubclass(tool, Tool):
+            tool_instance = tool(self.constants, self.logger, self.memory)
+            if (args):
+                tool_instance.run(args)
+            else:
+                tool_instance.run()
+                
         else:
             raise ValueError("RUN_TOOL tried to run a tool class that doesn't exist.")

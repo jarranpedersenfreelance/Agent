@@ -56,7 +56,7 @@ SCHEMA_DEFINITION = """
       "type": "RUN_TOOL",
       "explanation": "<Why you selected this task>",
       "module": "<python.tool.module>"
-      "tool class": "<Type for the Tool>"
+      "tool_class": "<Tool subclass in the specified module>"
       "arguments": "<A Dict[str, Any] of arguments for the Tool execution>"
     },
     {
@@ -135,8 +135,7 @@ class Gemini:
 
     def _build_context_prompt(self, current_action: ReasonAction) -> str:
         """Constructs the comprehensive prompt for the LLM."""
-        mem_files = self.memory.get_files()
-
+        
         # Serialize constants
         constants = {
           "MAX_REASON_STEPS": self.constants['AGENT']['MAX_REASON_STEPS']
@@ -144,12 +143,13 @@ class Gemini:
         constants_content = json.dumps(constants, indent=2)
         
         # Serialize memory
+        mem_files = self.memory.get_filepaths()
         selected_memory = {
           "action_queue": self.memory.list_actions(),
           "counters": self.memory.list_counts(),
           "file_contents": {
-            k: mem_files[k] if k in current_action.files_to_send 
-            else None
+            k: self.memory.get_file_contents(k) if k in current_action.files_to_send 
+            else ""
             for k in mem_files
           },
           "thoughts": {k: self.memory.get_thought(k) for k in current_action.thoughts_to_send},

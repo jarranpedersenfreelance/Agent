@@ -60,7 +60,7 @@ class ActionHandler:
     def _handle_read_file(self, action: ReadFileAction):
         """Handles the READ_FILE action."""
         file_path = action.file_path
-        mem_files = self.memory.get_files()
+        mem_files = self.memory.get_filepaths()
         self.logger.log_action(action, f"{file_path} - {action.explanation}")
 
         if not file_path:
@@ -70,26 +70,24 @@ class ActionHandler:
             raise ValueError(f"File path '{file_path}' is not tracked in memory.")
 
         contents = read_file(file_path)
-        mem_files[file_path] = contents
+        self.memory.fill_file_contents(file_path, contents)
 
     def _handle_write_file(self, action: WriteFileAction):
         """Handles the WRITE_FILE action."""
         file_path = action.file_path
         contents = action.contents
-        mem_files = self.memory.get_files()
         self.logger.log_action(action, f"{file_path} - {action.explanation}")
 
         if not file_path:
             raise ValueError("WRITE_FILE action requires 'file_path' argument.")
         
         write_file(file_path, contents)
-        mem_files = self.memory.get_files()
-        mem_files[file_path] = contents
+        self.memory.fill_file_contents(file_path, contents)
 
     def _handle_delete_file(self, action: DeleteFileAction):
         """Handles the DELETE_FILE action."""
         file_path = action.file_path
-        mem_files = self.memory.get_files()
+        mem_files = self.memory.get_filepaths()
         self.logger.log_action(action, f"{file_path} - {action.explanation}")
 
         if not file_path:
@@ -99,5 +97,4 @@ class ActionHandler:
             raise ValueError(f"File path '{file_path}' is not tracked in memory.")
         
         delete_file(file_path)
-        mem_files = self.memory.get_files()
-        del mem_files[file_path]
+        self.memory.remove_file(file_path)

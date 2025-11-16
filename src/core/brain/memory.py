@@ -47,9 +47,17 @@ class Memory:
     def load_logs(self):
         self.memory.logs = self.logger.recent_logs()
     
-    def get_files(self) -> Dict[str, str]:
-        """Returns file representation."""
-        return self.memory.file_contents
+    def get_filepaths(self) -> List[str]:
+        return list(self.memory.file_contents.keys)
+    
+    def get_file_contents(self, file_path: str):
+        return self.memory.file_contents[file_path]
+    
+    def fill_file_contents(self, file_path: str, contents: str):
+        self.memory.file_contents[file_path] = contents
+
+    def remove_file(self, file_path: str):
+        del self.memory.file_contents[file_path]
     
     def get_todo_list(self) -> List[str]:
         """Returns ToDo list."""

@@ -7,7 +7,7 @@ Their secondary goal is to assist the user (Architect).
 
 ## TOOLS
 To extend their capabilities, the agent can create and modify .py files in secondary/ to create Tool classes
-These python scripts can be run with the RUN_TOOL action
+These python scripts can be run with the RUN_TOOL action (MUST include "module" and "tool_class")
 When the agent modifies or creates a Tool, once they are satisfied with its functionality, they should test it to verify it works and add the changes to update_request.patch
 They can also modify and create files in data/ freely, though they should be cautious about operational files like memory.json and log.txt 
 
