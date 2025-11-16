@@ -6,8 +6,7 @@ from pydantic import BaseModel, Field
 
 from core.logger import Logger
 from core.definitions.models import (
-    Action, 
-    ActionType, 
+    Action,
     ReasonAction,
     ThinkAction,
     RunToolAction, 
@@ -41,8 +40,8 @@ SCHEMA_DEFINITION = """
       "type": "REASON",
       "explanation": "<Why you selected this task>",
       "task": "<The task to develop an action plan for>",
-      "files_to_send": "<A List[str] of file paths that specifies what file contents to send>",
-      "thoughts_to_send": "<A List[str] of thought labels that specifies what thought contents to send>"
+      "files_to_send": "<A List[str] of file paths. Only include files that were **newly created/modified** or are **absolutely critical** for the next steps>",
+      "thoughts_to_send": "<A List[str] of thought labels. Only include thoughts that contain **contextual information** or **intermediate results** needed for the next steps>"
     },
     {
       "type": "THINK",
@@ -53,10 +52,10 @@ SCHEMA_DEFINITION = """
     },
     {
       "type": "RUN_TOOL",
-      "explanation": "<Why you selected this task>",
-      "module": "<python.tool.module>"
-      "tool_class": "<Tool subclass in the specified module>"
-      "arguments": "<A Dict[str, Any] of arguments for the Tool execution>"
+      "explanation": "<Why you are running this tool>",
+      "module": "<The python module path, e.g., 'secondary.difftool'>",
+      "tool_class": "<The class name of the tool, e.g., 'DiffTool'>",
+      "arguments": "<A Dict[str, Any] of arguments. **EXAMPLE for DiffTool**: {'files': ['data/my_first_file.txt', 'secondary/another.py'], 'output_file_path': 'data/update_request.patch'}>"
     },
     {
       "type": "READ_FILE",
@@ -67,8 +66,8 @@ SCHEMA_DEFINITION = """
       "type": "WRITE_FILE",
       "explanation": "<Why you are writing this file>",
       "file_path": "<path/to/file>",
-      "use_thought": "Thought label if using corresponding thought value as contents, will be used instead of contents",
-      "contents": "<Full contents to write>"
+      "use_thought": "<The thought label for the thought content to use as contents. **Must be provided IF and ONLY IF contents is omitted**>",
+      "contents": "<Full contents to write. **Must be provided IF and ONLY IF use_thought is omitted**>"
     },
     {
       "type": "DELETE_FILE",

@@ -8,7 +8,7 @@ MEMORY_FILE="workspace/data/memory.json"
 TODO_FILE="to_do.txt"
 PATCH_FILE="workspace/data/update_request.patch"
 MAX_SNAPSHOT_SIZE=3000000 # ~3 MB (can increase up to 10)
-SNAPSHOT_EXCLUSIONS='workspace|*.git|.env|.DS_Store|to_do.txt'
+SNAPSHOT_EXCLUSIONS='workspace|*.git|.env|.DS_Store'
 
 # --- FILE LOCATIONS ---
 TEST_REPORT_FILE="test_results.xml"
@@ -154,7 +154,7 @@ function func_todo_deploy() {
 
     # Clean up dangling images created by the build process
     func_cleanup_dangling_images
-    
+
     echo ""
     echo "--- DEPLOYMENT END: $(date) ---"
 }

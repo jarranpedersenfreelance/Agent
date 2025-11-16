@@ -28,10 +28,7 @@ class ToolBox:
         tool = getattr(module, tool_class)
         if tool and issubclass(tool, Tool):
             tool_instance = tool(self.constants, self.logger, self.memory)
-            if (args):
-                output = tool_instance.run(args)
-            else:
-                output = tool_instance.run()
+            output = tool_instance.run(args)
             self.memory.set_thought(self.constants['AGENT']['TOOL_OUTPUT_THOUGHT'], output)
                 
         else:
