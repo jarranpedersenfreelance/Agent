@@ -37,18 +37,15 @@ class AgentCore:
         max_steps = self.constants['AGENT']['MAX_REASON_STEPS']
 
         while True:
+            self.memory.load_logs()
             self.memory.memorize()
             action = self.memory.pop_action()
 
             try:
                 if not action:
                     self.logger.log_warning("Ran out of actions")
-                    self.logger.log_info(f"Queuing Plan action")
-                    self.memory.add_action(ReasonAction(
-                        type = ActionType.REASON,
-                        task = "Plan",
-                        explanation = "action queue was empty"
-                    ))
+                    self.logger.log_info(f"Resetting actions, adding [REASON: Plan] action")
+                    self.memory.reset_actions("Plan", "action queue was empty")
                 
                 elif isinstance(action, ReasonAction):
                     reason_count = self.memory.inc_count(Count.REASON)
@@ -64,19 +61,22 @@ class AgentCore:
                         self.logger.log_info(f"Queued {len(new_actions)} new actions")
                     else:
                         self.logger.log_warning("Reason action returned no new actions")
-                        self.logger.log_info(f"Adding immediate Debug action")
-                        self.memory.add_immediate_action(ReasonAction(
-                            type = ActionType.REASON,
-                            task = "Debug why last reason action returned no actions",
-                            explanation = "reasoning failed to return actions"
-                        ))
+                        self.logger.log_info(f"Resetting actions, adding [REASON: Debug] action")
+                        self.memory.reset_actions(
+                            "Debug why last reason action returned no actions", 
+                            "reasoning failed to return actions"
+                        )
 
                 else:
                     self.action_handler.exec_action(action)
 
             except Exception as e:
                 self.logger.log_error(f"Failed to execute action {action.type.name}: {e}")
-                self.logger.log_info(f"Adding immediate Debug action")
+                self.logger.log_info(f"Resetting actions, adding [REASON: Debug] action")
+                self.memory.reset_actions(
+                    "Debug why last reason action returned no actions", 
+                    "reasoning failed to return actions"
+                )
                 self.memory.add_immediate_action(ReasonAction(
                     type = ActionType.REASON,
                     task = "Debug why last action failed",

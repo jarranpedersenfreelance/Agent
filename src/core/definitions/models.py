@@ -32,6 +32,7 @@ class Mem(BaseModel):
     counters: Dict[Count, int] = {}
     file_contents: Dict[str, str] = {}
     thoughts: Dict [str, str] = {}
+    logs: List[str] = []
     last_memorized: str = ""
 
 class ReasonAction(Action):

@@ -1,6 +1,7 @@
 import os
 import json
 import yaml
+import collections
 from typing import Any, Dict, List, Union, Type, TypeVar
 from datetime import datetime, timezone
 from pydantic import BaseModel
@@ -106,6 +107,12 @@ def delete_file(file_path: str):
     """Deletes a file if it exists."""
     if os.path.exists(file_path):
         os.remove(file_path)
+
+def read_file_tail(file_path: str, x: int) -> List[str]:
+    """ Reads the last x lines of a file using a deque for efficiency."""
+    with open(file_path, 'r') as f:
+        last_lines = collections.deque(f, x)
+    return list(last_lines)
 
 # --- Time Utility Functions ---
 

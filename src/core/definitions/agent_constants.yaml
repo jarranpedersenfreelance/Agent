@@ -19,3 +19,4 @@ API:
 AGENT:
     MAX_REASON_STEPS: 100
     STARTING_TASK: "Gather information about self and environment to decide first task based on discovered purpose."
+    LOG_TAIL_COUNT: 100

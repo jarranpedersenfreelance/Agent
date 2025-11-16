@@ -138,6 +138,7 @@ class Gemini:
             for k in mem_files
           },
           "thoughts": {k: mem_files[k] for k in current_action.thoughts_to_send},
+          "logs": self.memory.load_logs(),
           "last_memorized": self.memory.get_last_memorized()
         }
         memory_content = json.dumps(selected_memory, indent=2)
@@ -156,6 +157,7 @@ I am an AI Agent. Your task is to decide my next actions to take based on the fo
 {memory_content}
 (I have all file contents but am only sending those relevant to the task)
 (I have more thoughts but am only sending those relevant to the task)
+(I am only sending the last {self.constants['AGENT']['LOG_TAIL_COUNT']} lines of logs)
 
 # CURRENT TASK:
 {current_action.task}

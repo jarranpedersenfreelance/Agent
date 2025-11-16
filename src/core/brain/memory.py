@@ -19,7 +19,7 @@ class Memory:
         
         # Initialize action queue if empty
         if (not self.memory.action_queue):
-            self.reset_actions()
+            self.reset_actions(self.constants['AGENT']['STARTING_TASK'], "initial action")
             
         # Initialize file_contents with file structure if empty
         if (not self.memory.file_contents):
@@ -27,6 +27,9 @@ class Memory:
             file_paths = scan_workspace(root_dir=".")
             self.memory.file_contents = {path: "" for path in file_paths}
             self.logger.log_info(f"Tracked {len(file_paths)} files")
+
+        # Load recent logs
+        self.load_logs()
 
     def memorize(self):
         """Saves memory to disk."""
@@ -40,6 +43,9 @@ class Memory:
 
     def get_last_memorized(self) -> str:
         return self.memory.last_memorized
+    
+    def load_logs(self):
+        self.memory.logs = self.logger.recent_logs()
     
     def get_files(self) -> Dict[str, str]:
         """Returns file representation."""
@@ -57,23 +63,18 @@ class Memory:
 
     def list_counts(self) -> Dict[Count, int]:
         return self.memory.counters.copy()
-
-    def reset_actions(self):
-        starting_task = self.constants['AGENT']['STARTING_TASK']
-        initial_action = ReasonAction()
-        initial_action.task = starting_task
-        initial_action.explanation = "initial action"
-        self.memory.action_queue = [initial_action]
+    
+    def reset_actions(self, start_task: str, explanation: str):
+        action = ReasonAction()
+        action.task = start_task
+        action.explanation = explanation
+        self.memory.action_queue = [action]
 
     def pop_action(self) -> Union[Action, None]:
         """Removes and returns the next action from the front of the queue."""
         if not self.memory.action_queue:
             return None
         return self.memory.action_queue.pop(0)
-    
-    def add_immediate_action(self, action: Action):
-        """Adds a single action to the front of the queue."""
-        self.memory.action_queue.insert(0, action)
 
     def add_action(self, action: Action):
         """Adds a single action to the end of the queue."""
