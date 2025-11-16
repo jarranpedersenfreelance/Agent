@@ -48,7 +48,7 @@ class Memory:
         self.memory.logs = self.logger.recent_logs()
     
     def get_filepaths(self) -> List[str]:
-        return list(self.memory.file_contents.keys)
+        return [k for k in self.memory.file_contents]
     
     def get_file_contents(self, file_path: str):
         return self.memory.file_contents[file_path]
