@@ -1,6 +1,7 @@
 .DS_Store
 **/.DS_Store
 .env
+to_do.txt
 codebase_snapshot.txt
 test_results.xml
 workspace/

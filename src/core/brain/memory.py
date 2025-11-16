@@ -50,6 +50,14 @@ class Memory:
     def get_files(self) -> Dict[str, str]:
         """Returns file representation."""
         return self.memory.file_contents
+    
+    def get_todo_list(self) -> List[str]:
+        """Returns ToDo list."""
+        return self.memory.todo.copy()
+    
+    def update_todo_list(self, new_todo: List[str]):
+        """Updates ToDo list."""
+        self.memory.todo = new_todo
 
     def get_count(self, counter: Count) -> int:
         return self.memory.counters[counter]

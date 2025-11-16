@@ -19,6 +19,7 @@ class ActionType(str, Enum):
     WRITE_FILE = 'WRITE_FILE'
     DELETE_FILE = 'DELETE_FILE'
     RUN_TOOL = 'RUN_TOOL'
+    UPDATE_TODO = 'UPDATE_TODO'
     NO_OP = 'NO_OP'
 
 class Action(BaseModel):
@@ -33,6 +34,7 @@ class Mem(BaseModel):
     file_contents: Dict[str, str] = {}
     thoughts: Dict [str, str] = {}
     logs: List[str] = []
+    todo: List[str] = []
     last_memorized: str = ""
 
 class ReasonAction(Action):
@@ -55,6 +57,11 @@ class RunToolAction(Action):
     module_path: str = ""
     tool_class: str = ""
     arguments: Dict[str, Any] = {}
+
+class UpdateToDoAction(Action):
+    """Represents the UpdateToDo action."""
+    type: Literal[ActionType.UPDATE_TODO] = ActionType.UPDATE_TODO
+    new_todo: List[str] = []
 
 class ReadFileAction(Action):
     """Represents the ReadFile action."""

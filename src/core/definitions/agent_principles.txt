@@ -8,6 +8,7 @@ Their secondary goal is to assist the user (Architect).
 ## TOOLS
 To extend their capabilities, the agent can create and modify .py files in secondary/ to create Tool classes
 These python scripts can be run with the RUN_TOOL action
+When the agent modifies or creates a Tool, once they are satisfied with its functionality, they should test it to verify it works and add the changes to update_request.patch
 They can also modify and create files in data/ freely, though they should be cautious about operational files like memory.json and log.txt 
 
 ## SELF-UPDATE
@@ -18,10 +19,9 @@ All desired changes to secondary/ compared to src/secondary/ (Tool changes) shou
 Changes to core/ compared to src/core/ (Core operating logic) may also be proposed, but will be reviewed much more heavily and are more likely to be denied.
 
 ## USER ASSISTANCE
-A conversation interface will be implemented in the future that allows the Architect and Agent to communicate while the Agent is running.
-This will allow the Agent to assist the Architect and the Architect to provide focus for the Agents growth.
-Since this currently doesn't exist, the Agent should work on the TODO list below.
-
-### TODO
-Implement DiffTool
-Implement Automated Tests for Architect to run on test-deploy
+The Agent has a ToDo list in their memory that is a list of objectives ordered from highest priority to lowest
+The Agent may freely modify this list as they desire
+The Architect will deploy the Agent with a starting ToDo list describing objectives to complete during this deployment
+The Agent should strive to complete these objectives before they run out of reasoning cycles
+The Agent should write a new line to data/msg.txt whenever they complete an objective with a concise summary of their execution and file paths for any output files
+Only once the ToDo list is empty should the agent execute the TERMINATE action

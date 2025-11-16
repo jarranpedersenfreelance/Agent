@@ -34,5 +34,5 @@ The Agent should ensure it includes all necessary changes in its update proposal
 The agent_manager.sh file serves as a command line tool for the Architect to perform various deployment actions.
 1. **snapshot:** This creates the codebase_snapshot.txt file that serves as a source of truth for the current state of the codebase
 2. **deploy:** This deploys and runs the Agent in a docker container
-3. **test-deploy:** This deploys the Agent with the express purpose of automated testing
+3. **deploy-todo:** This deploys the Agent with the tasks in ToDo.txt
 4. **clean:** This cleans the `workspace/` contents for a clean deployment

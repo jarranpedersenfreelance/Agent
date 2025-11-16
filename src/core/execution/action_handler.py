@@ -1,6 +1,6 @@
 from typing import Dict, Any
 from core.logger import Logger
-from core.definitions.models import Action, ThinkAction, RunToolAction, ReadFileAction, WriteFileAction, DeleteFileAction
+from core.definitions.models import Action, ThinkAction, RunToolAction, UpdateToDoAction, ReadFileAction, WriteFileAction, DeleteFileAction
 from core.brain.memory import Memory
 from core.utilities import read_file, write_file, delete_file
 from core.execution.toolbox import ToolBox
@@ -51,6 +51,11 @@ class ActionHandler:
         args = action.arguments
         self.logger.log_action(action, f"{tool_class} with args: {str(args)} - {action.explanation}")
         self.toolbox.run_tool(module_path, tool_class, args)
+
+    def _handle_update_todo(self, action: UpdateToDoAction):
+        """Handles the RUN_TOOL action."""
+        todo = self.memory.update_todo_list(action.new_todo)
+        self.logger.log_action(action, f"{str(action.new_todo)} - {action.explanation}")
 
     def _handle_read_file(self, action: ReadFileAction):
         """Handles the READ_FILE action."""

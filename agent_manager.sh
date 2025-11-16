@@ -4,8 +4,10 @@
 SERVICE_NAME="agent"
 CONTAINER_NAME="agent_container"
 SNAPSHOT_FILE="codebase_snapshot.txt"
+MEMORY_FILE="workspace/data/memory.json"
+TODO_FILE="to_do.txt"
 MAX_SNAPSHOT_SIZE=3000000 # ~3 MB (can increase up to 10)
-SNAPSHOT_EXCLUSIONS='workspace|*.git|.env|.DS_Store'
+SNAPSHOT_EXCLUSIONS='workspace|*.git|.env|.DS_Store|to_do.txt'
 
 # --- FILE LOCATIONS ---
 TEST_REPORT_FILE="test_results.xml"
@@ -27,21 +29,6 @@ function func_logs() {
     echo "--- DUMPING RECENT CONTAINER LOGS FOR '$SERVICE_NAME' ---"
     docker-compose logs --tail=100 --timestamps "$SERVICE_NAME"
     echo "--- LOG DUMP COMPLETE ---"
-}
-
-function func_run_all_tests() {
-    # This function is used by 'test-deploy'
-    if ! is_running; then
-        echo "Warning: Cannot run full test suite. Container '$CONTAINER_NAME' is not running."
-        return 1
-    fi
-    
-    echo "--- Running Full Test Suite (/app/secondary/tests) ---"
-    
-    docker exec "$CONTAINER_NAME" python3 -m pytest /app/secondary/tests --junit-xml="$/app/$WORKSPACE_TEST_FILE"
-    TEST_EXIT_CODE=$?
-
-    return $TEST_EXIT_CODE
 }
 
 function func_copy_initial_files() {
@@ -109,67 +96,53 @@ function func_deploy() {
     echo "--- DEPLOYMENT END: $(date) ---"
 }
 
-function func_test_deploy() {
-    echo "--- TEST DEPLOYMENT START: $(date) ---"
+function func_todo_deploy() {
+    echo "--- DEPLOYMENT START: $(date) ---"
     echo ""
-    func_base_deploy
+
+    # copy initial memory file if empty (after clean)
+    cp -R -n src/data/* workspace/data/
     
-    # Give the container a moment to start up
-    sleep 2 
+    # copy to_do.txt contents to memory.json ToDo field as List[str]
+    echo "Injecting ToDo list from $TODO_FILE into $MEMORY_FILE..."
     
-    # Check Container Health and Get Logs on Crash (Initial check)
-    if ! is_running; then
-        echo "Container failed to remain running (CrashLoop). Dumping logs for root cause analysis."
-        func_logs
+    if [ -f "$TODO_FILE" ]; then
+        # Check for jq
+        if ! command -v jq &> /dev/null; then
+            echo "ERROR: 'jq' command is required for JSON manipulation but was not found. Skipping."
+            echo ""
+            echo "--- DEPLOYMENT END: $(date) ---"
+            return 1
+        fi
         
-        # Stop container
-        echo "Stopping container..."
-        docker-compose stop "$SERVICE_NAME" 2>/dev/null || true
+        # Read lines, filter out empty/whitespace-only lines, remove carriage returns, and convert to a JSON array string using jq.
+        TODO_LIST_JSON=$(grep -v '^\s*$' "$TODO_FILE" | tr -d '\r' | jq -R -s '.' | jq -c '. | map(select(. != ""))')
         
-        # End deployment
-        echo "TEST DEPLOYMENT FAILED: Container crashed on startup. Review logs above."
-        echo ""
-        echo "--- TEST DEPLOYMENT END: $(date) ---"
-        return 1 
-    fi
-
-    echo "Container is running. Proceeding with tests..."
-
-    func_run_all_tests
-    TEST_EXIT_CODE=$?
-
-    if [ "$TEST_EXIT_CODE" -ne 0 ]; then
-        # If Pytest failed, check if the container is still running. If not, the main process likely exited.
-        if ! is_running; then
-            echo "The container crashed during test execution. Dumping logs for root cause analysis."
-            func_logs
+        # Fallback if the file is empty or only whitespace
+        if [ -z "$TODO_LIST_JSON" ] || [ "$TODO_LIST_JSON" = "null" ] || [ "$TODO_LIST_JSON" = "[null]" ]; then
+            TODO_LIST_JSON="[]"
         fi
 
-        if [ -f "$WORKSPACE_TEST_FILE" ]; then
-            echo "Tests failed. Review $TEST_REPORT_FILE"
-            cp "$WORKSPACE_TEST_FILE" "$TEST_REPORT_FILE"
+        # Use jq to read memory.json, set the 'todo' field, and write back.
+        jq --argjson todo_array "$TODO_LIST_JSON" '. + {todo: $todo_array}' "$MEMORY_FILE" > temp.json
+        
+        if [ $? -eq 0 ]; then
+            mv temp.json "$MEMORY_FILE"
+            echo "Successfully injected $(echo "$TODO_LIST_JSON" | jq '. | length') items into 'todo' field."
         else
-            echo "Pytest failed and Test XML file was not generated. See output above for errors."
+            echo "ERROR: Failed to process $MEMORY_FILE with jq. Check memory.json structure."
+            rm -f temp.json
         fi
     else
-        echo "Tests passed."
-        cp "$WORKSPACE_TEST_FILE" "$TEST_REPORT_FILE"
+        echo "ERROR: $TODO_FILE not found. Skipping ToDo list injection."
+        echo ""
+        echo "--- DEPLOYMENT END: $(date) ---"
+        return 1
     fi
 
-    # Stop container
-        echo "Stopping container..."
-        docker-compose stop "$SERVICE_NAME" 2>/dev/null || true
-
-    # Final Report
-    if [ "$TEST_EXIT_CODE" -eq 0 ]; then
-        echo "TEST DEPLOYMENT Complete: ALL TESTS PASSED."
-    else
-        echo "TEST DEPLOYMENT Complete: TESTS FAILED (Exit Code $TEST_EXIT_CODE). Review $TEST_REPORT_FILE."
-    fi
-
+    func_base_deploy
     echo ""
-    echo "--- TEST DEPLOYMENT END: $(date) ---"
-    return $TEST_EXIT_CODE
+    echo "--- DEPLOYMENT END: $(date) ---"
 }
 
 function func_snapshot() {
@@ -219,8 +192,8 @@ function usage() {
     echo "Usage: ./agent_manager.sh <command>"
     echo ""
     echo "Commands:"
-    echo "  deploy          : Run a full deployment and start the agent."
-    echo "  test-deploy     : Run a full deployment setup, execute ALL tests, and STOP the container, leaving it available for log inspection."
+    echo "  deploy          : Deploy and start the agent."
+    echo "  deploy          : Update ToDo list in agent memory, then deploy and start the agent."
     echo "  clean           : Clear the workspace directory."
     echo "  logs            : Display the most recent logs from the agent container."
     echo "  snapshot        : Generate the codebase_snapshot.txt file for context upload."
@@ -238,8 +211,8 @@ case "$1" in
     deploy)
         func_deploy
         ;;
-    test-deploy)
-        func_test_deploy
+    deploy-todo)
+        func_todo_deploy
         ;;
     clean)
         func_clean
