@@ -25,3 +25,28 @@ services:
       - ./agent_manager.sh:/app/agent_manager.sh:ro
       
     restart: "no"
+
+  agent-test:
+    extends:
+      service: agent
+    container_name: agent_test_container
+    
+    # Command for test mode, setting the environment variable
+    command: ["/bin/sh", "-c", "echo 'Workspace ready. Starting Agent in Test Mode.' && AGENT_TEST_MODE=true PYTHONPATH=/app/workspace python3 -m core.agent_core"]
+    
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - AGENT_TEST_MODE=true
+    volumes:
+      # --- Source Code and Core Logic (Read-Only) ---
+      - ./src:/app/src:ro
+      
+      # --- Agent State/Output (Read/Write/Exec) ---
+      - ./test_workspace:/app/workspace
+      
+      # --- Base Directory Files (Read-Only) ---
+      - ./README.md:/app/README.md:ro 
+      - ./Dockerfile:/app/Dockerfile:ro
+      - ./docker-compose.yml:/app/docker-compose.yml:ro
+      - ./requirements.txt:/app/requirements.txt:ro
+      - ./agent_manager.sh:/app/agent_manager.sh:ro

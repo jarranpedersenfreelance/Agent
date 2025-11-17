@@ -3,5 +3,5 @@
 .env
 to_do.txt
 codebase_snapshot.txt
-test_results.xml
 workspace/
+test_workspace/

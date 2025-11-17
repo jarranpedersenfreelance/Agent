@@ -3,12 +3,14 @@
 # --- CONFIGURATION ---
 SERVICE_NAME="agent"
 CONTAINER_NAME="agent_container"
+TEST_SERVICE_NAME="agent-test"
+TEST_CONTAINER_NAME="agent_test_container"
 SNAPSHOT_FILE="codebase_snapshot.txt"
 MEMORY_FILE="workspace/data/memory.json"
 TODO_FILE="to_do.txt"
 PATCH_FILE="workspace/data/update_request.patch"
 MAX_SNAPSHOT_SIZE=3000000 # ~3 MB (can increase up to 10)
-SNAPSHOT_EXCLUSIONS='workspace|*.git|.env|.DS_Store'
+SNAPSHOT_EXCLUSIONS='workspace|test_workspace|*.git|.env|.DS_Store'
 
 # --- FILE LOCATIONS ---
 TEST_REPORT_FILE="test_results.xml"
@@ -18,12 +20,6 @@ WORKSPACE_TEST_FILE="workspace/data/$TEST_REPORT_FILE"
 
 function is_running() {
     docker inspect -f '{{.State.Running}}' "$CONTAINER_NAME" 2>/dev/null | grep -q "true"
-}
-
-function func_cleanup_output_files() {
-    echo "  -> Cleaning previous log and output files..."
-    rm -f "$TEST_REPORT_FILE"       # Clear the final XML file from the host root
-    rm -f "$WORKSPACE_TEST_FILE"     # Clear the generated XML file from the workspace/data mount
 }
 
 function func_logs() {
@@ -65,9 +61,6 @@ function func_cleanup_dangling_images() {
 function func_pre_deploy() {
     echo "Ensuring clean slate..."
 
-    # Cleanup Logs
-    func_cleanup_output_files
-
     # Container Management (Stop/Remove Old Instance)
     docker-compose stop "$SERVICE_NAME" 2>/dev/null || true
     docker-compose rm -f "$SERVICE_NAME" 2>/dev/null || true
@@ -101,7 +94,7 @@ function func_deploy() {
 }
 
 function func_todo_deploy() {
-    echo "--- DEPLOYMENT START: $(date) ---"
+    echo "--- TODO DEPLOYMENT START: $(date) ---"
     echo ""
 
     # Clean and Re-Copy Files
@@ -157,6 +150,59 @@ function func_todo_deploy() {
 
     echo ""
     echo "--- DEPLOYMENT END: $(date) ---"
+}
+
+function func_test_deploy() {
+    echo "--- TEST DEPLOYMENT START: $(date) ---"
+    echo ""
+    
+    echo "Ensuring clean slate..."
+
+    # Container Management (Stop/Remove Old Instance)
+    docker-compose stop "$TEST_SERVICE_NAME" 2>/dev/null || true
+    docker-compose rm -f "$TEST_SERVICE_NAME" 2>/dev/null || true
+
+    # Workspace Cleanup (Code Directories)
+    chmod -R u+w test_workspace/core 2>/dev/null || true
+    chmod -R u+w test_workspace/secondary 2>/dev/null || true
+    rm -rf test_workspace/core/*
+    rm -rf test_workspace/secondary/*
+    
+    # Ensure directories exist
+    mkdir -p test_workspace/core
+    mkdir -p test_workspace/secondary
+    mkdir -p test_workspace/data
+    
+    # Copy Executable Code
+    cp -a src/core/. test_workspace/core/
+    cp -a src/secondary/. test_workspace/secondary/
+    
+    # Copy Initial State Files
+    cp -R -n src/data/* test_workspace/data/
+    
+    # Enforce Immutability (Read-Only Core Logic)
+    chmod -R a-w test_workspace/core/*
+    
+    # Enforce Read/Write, Non-Executable for Data
+    chmod -R a+rw test_workspace/data/
+    # Recursively ensure all files (but not directories) are NOT executable.
+    find test_workspace/data/ -type f -exec chmod a-x {} +
+
+    echo "Starting agent-test container..."
+    docker-compose up agent-test --build --abort-on-container-exit
+
+    TEST_EXIT_CODE=$(docker inspect agent_test_container --format='{{.State.ExitCode}}')
+    echo "Test run complete. Container exit code: $TEST_EXIT_CODE"
+
+    func_cleanup_dangling_images
+
+    echo ""
+    if [ "$TEST_EXIT_CODE" -eq 0 ]; then
+        echo "--- TEST DEPLOY SUCCESS: $(date) ---"
+    else
+        echo "--- TEST DEPLOY FAILED (Exit Code: $TEST_EXIT_CODE): $(date) ---"
+        exit "$TEST_EXIT_CODE"
+    fi
 }
 
 function func_snapshot() {
@@ -247,6 +293,7 @@ function usage() {
     echo ""
     echo "Commands:"
     echo "  deploy             : Deploy and start the agent."
+    echo "  test-deploy        : Deploy a mock agent and run tests."
     echo "  todo-deploy        : Update ToDo list in agent memory, then deploy and start the agent."
     echo "  apply-patch [file] : Apply a .patch file to the 'src/' directory. Uses $PATCH_FILE by default."
     echo "  clean              : Clear the workspace directory."
@@ -268,6 +315,9 @@ case "$1" in
         ;;
     todo-deploy)
         func_todo_deploy
+        ;;
+    test-deploy)
+        func_test_deploy
         ;;
     clean)
         func_clean
