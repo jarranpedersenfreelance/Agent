@@ -1,2 +1,2 @@
-def smoke_test():
+def test_smoke():
     assert True

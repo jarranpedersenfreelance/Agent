@@ -3,11 +3,13 @@
 LOG_LEVEL: 4 # INFO
 
 FILE_PATHS:
-    AGENT_PRINCIPLES_FILE: "core/definitions/agent_principles.txt"
-    PATCH_FILE: "data/update_request.patch"
-    MEMORY_FILE: "data/memory.json"
+    AGENT_PRINCIPLES_FILE: "/app/workspace/core/definitions/agent_principles.txt"
+    PATCH_FILE: "/app/workspace/data/update_request.patch"
+    MEMORY_FILE: "/app/workspace/data/memory.json"
     SRC_MEMORY_FILE: "/app/src/data/memory.json"
-    LOG_FILE: "data/log.txt"
+    LOG_FILE: "/app/workspace/data/log.txt"
+    TEST_DIR: "/app/workspace/secondary/tests/"
+    TEST_OUTPUT: "/app/workspace/data/test_output.html"
 
 API:
     MODEL: "gemini-2.5-flash"

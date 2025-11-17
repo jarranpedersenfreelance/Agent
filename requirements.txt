@@ -2,4 +2,5 @@
 pyyaml
 pydantic
 pytest
+pytest-html
 google-generativeai

@@ -1,6 +1,7 @@
 import os
 import traceback
 from typing import Dict, Any
+import pytest
 
 from core.logger import Logger
 from core.utilities import read_file, yaml_safe_load
@@ -102,7 +103,38 @@ class AgentCore:
                 self._debug(f"failed to execute action {action.type.name}")
 
     def run_tests(self):
-        pass
+        """Runs all tests and outputs results"""
+        test_dir = self.constants['FILE_PATHS']['TEST_DIR']
+        report_file = self.constants['FILE_PATHS']['TEST_OUTPUT']
+        self.logger.log_info(f"Starting test run in directory: {test_dir}")
+        
+        if not os.path.isdir(test_dir):
+            self.logger.log_error(f"Test directory not found: {test_dir}")
+            return
+            
+        try:
+            # Command line arguments for pytest.main():
+            # ['--html', REPORT_FILE]: Tells pytest to generate an HTML report at the specified path.
+            # ['--self-contained-html']: Ensures the HTML file includes all CSS/JS, making it a single human-readable file.
+            pytest_args = [
+                test_dir, 
+                '--html', report_file, 
+                '--self-contained-html'
+            ]
+            
+            exit_code = pytest.main(pytest_args)
+            
+            # Log the result
+            if exit_code == 0:
+                self.logger.log_info(f"All tests passed! Report generated at: {report_file}")
+            else:
+                self.logger.log_warning(f"Tests failed (Exit code: {exit_code}). Report generated at: {report_file}")
+
+        except Exception as e:
+            self.logger.log_error(f"Failed to run pytest: {e}")
+            self.logger.log_error(f"Stack Trace: {traceback.format_exc()}")
+            
+        self.logger.log_info("Test run finished.")
 
 # --- Main Entry Point ---
 if __name__ == "__main__":
