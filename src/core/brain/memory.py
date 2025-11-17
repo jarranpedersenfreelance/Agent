@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Union
 from core.logger import Logger
 from core.definitions.models import Mem, Count, Action, ReasonAction
-from core.utilities import json_typed_load, json_dump, current_timestamp, scan_workspace
+from core.utilities import json_typed_load, json_dump, current_timestamp, scan_files
 
 class Memory:
     """Manages the agent's memory"""
@@ -21,7 +21,7 @@ class Memory:
         # Initialize file_contents with file structure if empty
         if (not self.memory.file_contents):
             self.logger.log_info("Initializing file structure in memory")
-            file_paths = scan_workspace(root_dir=".")
+            file_paths = scan_files()
             self.memory.file_contents = {path: "" for path in file_paths}
             self.logger.log_info(f"Tracked {len(file_paths)} files")
 

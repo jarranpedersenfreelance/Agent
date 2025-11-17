@@ -10,39 +10,24 @@ T = TypeVar('T', bound=BaseModel)
 
 # --- File Scanning Utility Function ---
 
-def scan_workspace(root_dir: str = ".") -> List[str]:
-    """
-    Recursively scans the directory and returns a list of all file paths 
-    relative to the root_dir. Excludes common system/build files.
-    """
-    file_paths = []
+def scan_files(base_dir: str = '/app/', ignore_list: List[str] = []) -> List[str]:
+    """Returns absolute file paths for all files in the specified directory"""
+    base_path = os.path.abspath(base_dir)
+    file_paths: List[str] = []
     
-    # Define directories/files to ignore in the workspace scan
-    IGNORE_DIRS = set(['__pycache__', '.git'])
-    IGNORE_FILES = set(['.DS_Store', 'Thumbs.db'])
+    for root, dirs, files in os.walk(base_path, topdown=True):
+        dirs[:] = [d for d in dirs if d not in ignore_list]
 
-    for dirpath, dirnames, filenames in os.walk(root_dir):
-        # Filter out ignored directories in place for os.walk efficiency
-        dirnames[:] = [d for d in dirnames if d not in IGNORE_DIRS]
-
-        # Calculate the relative path of the current directory
-        relative_dir = os.path.relpath(dirpath, root_dir)
-        # os.path.relpath returns '.' for the root, which we should ignore in the join
-        if relative_dir == '.':
-            relative_dir = ''
-
-        for filename in filenames:
-            if filename not in IGNORE_FILES:
-                # Construct the full relative path
-                if relative_dir:
-                    full_path = os.path.join(relative_dir, filename)
-                else:
-                    full_path = filename
-                
-                # Normalize the path to use forward slashes for consistency
-                file_paths.append(full_path.replace(os.sep, '/'))
-                
-    return sorted(file_paths)
+        for filename in files:
+            absolute_path = os.path.join(root, filename)
+            
+            if not filename in ignore_list:
+                path_segments = absolute_path.split(os.sep)
+                if any(segment in ignore_list for segment in path_segments):
+                    is_ignored = True
+                file_paths.append(absolute_path)
+                          
+    return file_paths
 
 
 # --- YAML Utility Functions ---

@@ -162,11 +162,9 @@ function func_test_deploy() {
     docker-compose stop "$TEST_SERVICE_NAME" 2>/dev/null || true
     docker-compose rm -f "$TEST_SERVICE_NAME" 2>/dev/null || true
 
-    # Workspace Cleanup (Code Directories)
-    chmod -R u+w test_workspace/core 2>/dev/null || true
-    chmod -R u+w test_workspace/secondary 2>/dev/null || true
-    rm -rf test_workspace/core/*
-    rm -rf test_workspace/secondary/*
+    echo "Emptying test_workspace directory..."
+    chmod -R u+w test_workspace/ 2>/dev/null || true
+    rm -rf test_workspace/*
     
     # Ensure directories exist
     mkdir -p test_workspace/core
@@ -188,21 +186,14 @@ function func_test_deploy() {
     # Recursively ensure all files (but not directories) are NOT executable.
     find test_workspace/data/ -type f -exec chmod a-x {} +
 
-    echo "Starting agent-test container..."
-    docker-compose up agent-test --build --abort-on-container-exit
+    echo "Building and starting the '$TEST_SERVICE_NAME' container..."
+    docker-compose up -d --build "$TEST_SERVICE_NAME"
 
-    TEST_EXIT_CODE=$(docker inspect agent_test_container --format='{{.State.ExitCode}}')
-    echo "Test run complete. Container exit code: $TEST_EXIT_CODE"
-
+    # Clean up dangling images created by the build process
     func_cleanup_dangling_images
 
     echo ""
-    if [ "$TEST_EXIT_CODE" -eq 0 ]; then
-        echo "--- TEST DEPLOY SUCCESS: $(date) ---"
-    else
-        echo "--- TEST DEPLOY FAILED (Exit Code: $TEST_EXIT_CODE): $(date) ---"
-        exit "$TEST_EXIT_CODE"
-    fi
+    echo "--- TEST DEPLOYMENT END: $(date) ---"
 }
 
 function func_snapshot() {
