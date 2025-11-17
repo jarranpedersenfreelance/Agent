@@ -187,7 +187,7 @@ function func_test_deploy() {
     find test_workspace/data/ -type f -exec chmod a-x {} +
 
     echo "Building and starting the '$TEST_SERVICE_NAME' container..."
-    docker-compose up -d --build "$TEST_SERVICE_NAME"
+    docker-compose run --rm $TEST_SERVICE_NAME
 
     # Clean up dangling images created by the build process
     func_cleanup_dangling_images
