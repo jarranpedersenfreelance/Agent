@@ -37,6 +37,8 @@ class Mem(BaseModel):
     logs: List[str] = []
     todo: List[str] = []
     last_memorized: str = ""
+    deployed_at: str = ""
+    mock: bool = False
 
 class ReasonAction(Action):
     """Represents the Reason action."""

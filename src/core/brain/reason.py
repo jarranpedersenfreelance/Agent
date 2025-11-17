@@ -151,7 +151,7 @@ class Gemini:
           "thoughts": {k: self.memory.get_thought(k) for k in current_action.thoughts_to_send},
           "logs": self.memory.load_logs(),
           "todo": self.memory.get_todo_list(),
-          "last_memorized": self.memory.get_last_memorized()
+          "last_memorized": self.memory.last_memorized()
         }
         memory_content = json.dumps(selected_memory, indent=2)
 

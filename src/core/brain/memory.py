@@ -16,6 +16,8 @@ class Memory:
         else:
             self.memory_file = self.constants['FILE_PATHS']['TEST_MEMORY_FILE']
             self.memory = json_typed_load(Mem, self.constants['FILE_PATHS']['SRC_MEMORY_FILE'])
+
+        self.memory.deployed_at = current_timestamp()
         
         # Initialize action queue if empty
         if (not self.memory.action_queue):
@@ -30,6 +32,7 @@ class Memory:
 
         # Load recent logs
         self.load_logs()
+        self.memorize()
 
     def memorize(self):
         """Saves memory to disk."""
@@ -41,7 +44,13 @@ class Memory:
         self.memory.last_memorized = current_timestamp()
         json_dump(self.memory, self.memory_file)
 
-    def get_last_memorized(self) -> str:
+    def deployed_at(self) -> str:
+        return self.memory.deployed_at
+
+    def is_test(self) -> bool:
+        return self.memory.mock
+
+    def last_memorized(self) -> str:
         return self.memory.last_memorized
     
     def load_logs(self):
