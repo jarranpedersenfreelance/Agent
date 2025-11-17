@@ -7,9 +7,7 @@ FILE_PATHS:
     PATCH_FILE: "data/update_request.patch"
     MEMORY_FILE: "data/memory.json"
     SRC_MEMORY_FILE: "/app/src/data/memory.json"
-    TEST_MEMORY_FILE: "data/test/memory.json"
     LOG_FILE: "data/log.txt"
-    TEST_LOG_FILE: "data/test/log.txt"
 
 API:
     MODEL: "gemini-2.5-flash"

@@ -17,15 +17,15 @@ class AgentCore:
     Manages the core loop, initialization, and component orchestration.
     """
     
-    def __init__(self, constants: Dict[str, Any], mock = False):
+    def __init__(self, constants: Dict[str, Any]):
         self.constants = constants
-        self.mock = mock
-        self.logger = Logger(constants, mock)
+        self.logger = Logger(constants)
         self.agent_principles = read_file(self.constants['FILE_PATHS']['AGENT_PRINCIPLES_FILE'])
         self.logger.log_info("Initializing AgentCore")
         
         # Initialize Modules
-        self.memory = Memory(self.constants, self.logger, mock)
+        is_test = True if os.environ.get("AGENT_TEST_MODE") else False
+        self.memory = Memory(self.constants, self.logger, is_test)
         self.reason = Reason(self.constants, self.logger, self.agent_principles, self.memory)
         self.action_handler = ActionHandler(self.constants, self.logger, self.memory)
 
@@ -101,12 +101,19 @@ class AgentCore:
                 self.logger.log_error(f"Stack Trace: {traceback.format_exc()}")
                 self._debug(f"failed to execute action {action.type.name}")
 
+    def run_tests(self):
+        pass
+
 # --- Main Entry Point ---
 if __name__ == "__main__":
     try:
         constants = yaml_safe_load(CONSTANTS_YAML)
         agent = AgentCore(constants)
-        agent.run()
+        if agent.memory.is_test():
+            agent.run_tests()
+        else:
+            agent.run()
+
     except Exception as e:
         print(f"Critical error during Agent execution: {e}")
         print(traceback.format_exc())

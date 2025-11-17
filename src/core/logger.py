@@ -5,15 +5,10 @@ from core.utilities import append_file, current_timestamp, read_file_tail
 class Logger:
     """Manages logging and printing to the console"""
     
-    def __init__(self, constants: Dict[str, Any], mock: bool = False):
+    def __init__(self, constants: Dict[str, Any]):
         self.constants = constants
-        self.mock = mock
         self.log_level = constants['LOG_LEVEL']
-
-        if not mock:
-            self.log_file = self.constants['FILE_PATHS']['LOG_FILE']
-        else:
-            self.log_file = self.constants['FILE_PATHS']['TEST_LOG_FILE']
+        self.log_file = self.constants['FILE_PATHS']['LOG_FILE']
 
     def _log(self, log_type: LogType, msg: str, action: Action = None):
         if log_type.value > self.log_level:

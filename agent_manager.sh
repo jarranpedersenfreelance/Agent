@@ -293,7 +293,7 @@ function usage() {
     echo ""
     echo "Commands:"
     echo "  deploy             : Deploy and start the agent."
-    echo "  test-deploy        : Deploy a mock agent and run tests."
+    echo "  test-deploy        : Deploy a test agent and run tests."
     echo "  todo-deploy        : Update ToDo list in agent memory, then deploy and start the agent."
     echo "  apply-patch [file] : Apply a .patch file to the 'src/' directory. Uses $PATCH_FILE by default."
     echo "  clean              : Clear the workspace directory."

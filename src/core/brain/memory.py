@@ -6,17 +6,12 @@ from core.utilities import json_typed_load, json_dump, current_timestamp, scan_w
 class Memory:
     """Manages the agent's memory"""
     
-    def __init__(self, constants: Dict[str, Any], logger: Logger, mock: bool = False):
+    def __init__(self, constants: Dict[str, Any], logger: Logger, is_test: bool):
         self.constants = constants
         self.logger = logger
-        self.mock = mock
-        if not mock:
-            self.memory_file = self.constants['FILE_PATHS']['MEMORY_FILE']
-            self.memory = json_typed_load(Mem, self.memory_file)
-        else:
-            self.memory_file = self.constants['FILE_PATHS']['TEST_MEMORY_FILE']
-            self.memory = json_typed_load(Mem, self.constants['FILE_PATHS']['SRC_MEMORY_FILE'])
-
+        self.memory_file = self.constants['FILE_PATHS']['MEMORY_FILE']
+        self.memory = json_typed_load(Mem, self.memory_file)
+        self.memory.is_test = is_test
         self.memory.deployed_at = current_timestamp()
         
         # Initialize action queue if empty
@@ -36,9 +31,6 @@ class Memory:
 
     def memorize(self):
         """Saves memory to disk."""
-        # mock memory used for tests isn't saved to disk
-        if self.mock:
-            return
         # TODO: add file size checks that trigger compression functions
         # TODO: add validation to ensure memory isn't corrupted
         self.memory.last_memorized = current_timestamp()
@@ -48,7 +40,7 @@ class Memory:
         return self.memory.deployed_at
 
     def is_test(self) -> bool:
-        return self.memory.mock
+        return self.memory.is_test
 
     def last_memorized(self) -> str:
         return self.memory.last_memorized
