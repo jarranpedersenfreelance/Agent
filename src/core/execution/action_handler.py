@@ -1,3 +1,4 @@
+import os
 from typing import Dict, Any
 from core.logger import Logger
 from core.definitions.models import (
@@ -80,7 +81,7 @@ class ActionHandler:
 
     def _handle_read_file(self, action: ReadFileAction):
         """Handles the READ_FILE action."""
-        file_path = action.file_path
+        file_path = os.path.abspath(action.file_path)
         mem_files = self._memory.get_filepaths()
         self._logger.log_action(action, f"{file_path} - {action.explanation}")
 
@@ -95,7 +96,7 @@ class ActionHandler:
 
     def _handle_write_file(self, action: WriteFileAction):
         """Handles the WRITE_FILE action."""
-        file_path = action.file_path
+        file_path = os.path.abspath(action.file_path)
         contents = action.contents
         self._logger.log_action(action, f"{file_path} - {action.explanation}")
 
@@ -111,7 +112,7 @@ class ActionHandler:
 
     def _handle_delete_file(self, action: DeleteFileAction):
         """Handles the DELETE_FILE action."""
-        file_path = action.file_path
+        file_path = os.path.abspath(action.file_path)
         mem_files = self._memory.get_filepaths()
         self._logger.log_action(action, f"{file_path} - {action.explanation}")
 

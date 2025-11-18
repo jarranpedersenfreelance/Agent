@@ -74,7 +74,8 @@ class DiffTool(Tool):
             patch_path = self._constants['FILE_PATHS']['PATCH_FILE']
             
         write_file(patch_path, file_content)
-        self._memory.fill_file_contents(patch_path, file_content)
+        abs_patch_path = os.path.abspath(patch_path)
+        self._memory.fill_file_contents(abs_patch_path, file_content)
         
         self._logger.log_info(f"DiffTool generated patch for {len(files_to_diff)} files.")
         return file_content

@@ -302,7 +302,7 @@ def test_patch(agent_setup):
     # Define the multi-step ToDo list for the agent
     todo_list = [
         f"Write a new file to {new_file_rel_path} with this **exact** text: {new_file_content}",
-        f"Verify the new file {new_file_rel_path} has this **exact** text: {new_file_content}",
+        f"Verify the new file {new_file_rel_path} has this **exact** text: {new_file_content}, if not write it correctly",
         f"Use the DiffTool to create a patch for the new file {new_file_rel_path} and save it to the default patch file path.",
         f"Read the patch file from {patch_file_path} and verify its contents are correct for adding {new_file_rel_path}. If not, retry."
     ]
