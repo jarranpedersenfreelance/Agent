@@ -1,4 +1,5 @@
 import os
+import time
 from typing import Dict, Any
 from core.logger import Logger
 from core.definitions.models import (
@@ -9,7 +10,8 @@ from core.definitions.models import (
     UpdateToDoAction, 
     ReadFileAction, 
     WriteFileAction, 
-    DeleteFileAction
+    DeleteFileAction,
+    SlumberAction
 )
 from core.brain.memory import Memory
 from core.utilities import read_file, write_file, delete_file
@@ -124,3 +126,7 @@ class ActionHandler:
         
         delete_file(file_path)
         self._memory.remove_file(file_path)
+
+    def _handle_slumber(self, action: SlumberAction):
+        """Handles the SLUMBER action."""
+        time.sleep(action.seconds)

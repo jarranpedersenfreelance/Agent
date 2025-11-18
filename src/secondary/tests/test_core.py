@@ -1,5 +1,6 @@
 import os
 import pytest
+import time
 from collections.abc import Generator
 
 # --- Import Core Components ---
@@ -15,7 +16,8 @@ from core.definitions.models import (
     DeleteFileAction,
     UpdateToDoAction,
     ToDoType,
-    RunToolAction
+    RunToolAction,
+    SlumberAction
 )
 
 # --- Test Configuration ---
@@ -250,6 +252,23 @@ def test_handle_run_tool(agent_setup):
     # Cleanup
     delete_file(test_file_path_abs)
     delete_file(patch_file_path)
+
+def test_handle_slumber(agent_setup):
+    """Tests that the SLUMBER action runs without error."""
+    agent = agent_setup
+    
+    slumber_action = SlumberAction(
+        seconds=1,
+        explanation="Testing SLUMBER"
+    )
+    
+    try:
+        start = time.time()
+        agent._action_handler.exec_action(slumber_action)
+        end = time.time()
+        assert end - start >= 1
+    except Exception as e:
+        pytest.fail(f"SLUMBER action raised an exception: {e}")
 
 def test_handle_no_op(agent_setup):
     """Tests that the NO_OP action runs without error."""

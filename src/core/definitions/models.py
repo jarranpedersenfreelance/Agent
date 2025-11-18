@@ -21,6 +21,7 @@ class ActionType(str, Enum):
     RUN_TOOL = 'RUN_TOOL'
     UPDATE_TODO = 'UPDATE_TODO'
     TERMINATE = 'TERMINATE'
+    SLUMBER = 'SLUMBER'
     NO_OP = 'NO_OP'
 
 class BaseAction(BaseModel):
@@ -82,6 +83,11 @@ class DeleteFileAction(BaseAction):
     type: Literal[ActionType.DELETE_FILE] = ActionType.DELETE_FILE # type: ignore
     file_path: str = ""
 
+class SlumberAction(BaseAction):
+    """Represents the Slumber action."""
+    type: Literal[ActionType.SLUMBER] = ActionType.SLUMBER # type: ignore
+    seconds: int = 0
+
 class TerminateAction(BaseAction):
     """Represents the Terminate action."""
     type: Literal[ActionType.TERMINATE] = ActionType.TERMINATE # type: ignore
@@ -95,6 +101,7 @@ ActionUnion = Union[
     RunToolAction,
     ThinkAction,
     ReasonAction,
+    SlumberAction,
     NoOpAction,
 ]
 
