@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Union
 from core.definitions.models import LogType, Action
-from core.utilities import append_file, current_timestamp, read_file_tail
+from core.utilities import append_file, current_timestamp, read_file_tail, get_file_size, read_file_lines, write_file
 
 class Logger:
     """Manages logging and printing to the console"""
@@ -25,6 +25,20 @@ class Logger:
         time_str = current_timestamp()
         file_log_str = f"[{time_str}]{log_str}\n"
         append_file(self._log_file, file_log_str)
+
+        # delete old logs if max size reached (half of max size)
+        current_size = get_file_size(self._log_file)
+        max_size = int(self._constants['RESOURCE_CAPS']['LOG_SIZE'])
+        if current_size >= max_size:
+            target_size = int(max_size / 2)
+            remaining_lines = read_file_lines(self._log_file)
+            while current_size > target_size:
+                removed_log = remaining_lines.pop(0)
+                line_size = len(removed_log.encode())
+                current_size -= line_size
+
+            remaining_lines.append(f"[{time_str}][{LogType.WARNING.name}]: Max log file size reached, removed oldest logs\n")
+            write_file(self._log_file, ''.join(remaining_lines))
 
     def recent_logs(self) -> List[str]:
         return read_file_tail(self._log_file, self._constants['AGENT']['LOG_TAIL_COUNT'])

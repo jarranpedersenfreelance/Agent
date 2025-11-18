@@ -2,6 +2,11 @@ version: '3.8'
 services:
   agent:
     build: .
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+          cpus: '5.0'
     image: agent:latest
     container_name: agent_container
     working_dir: /app/workspace

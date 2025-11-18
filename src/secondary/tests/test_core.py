@@ -68,6 +68,23 @@ def agent_setup() -> Generator[AgentCore]:
 def test_smoke():
     assert True
 
+def test_log_limit(agent_setup):
+    agent = agent_setup
+    max_size = int(agent._constants['RESOURCE_CAPS']['LOG_SIZE'])
+    line_size = int(max_size / 4) # with metadata, 4 will trigger deletion and leave 1
+
+    agent._logger.log_info('1' * line_size)
+    agent._logger.log_info('2' * line_size)
+    agent._logger.log_info('3' * line_size)
+    agent._logger.log_info('This should stay')
+    # trigger deletion of 1-3
+    agent._logger.log_info('4' * line_size)
+
+    # Only the second log and warning log should remain
+    logs = agent._logger.recent_logs()
+    assert logs[0].endswith('This should stay\n')
+    assert logs[1].endswith('4444\n')
+
 # --- ACTION HANDLER UNIT TESTS ---
 
 def test_handle_think(agent_setup):

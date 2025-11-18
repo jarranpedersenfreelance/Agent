@@ -100,11 +100,24 @@ def delete_file(file_path: str):
     if os.path.exists(file_path):
         os.remove(file_path)
 
+def read_file_lines(filepath) -> List[str]:
+    """ Reads all lines of a file."""
+    if os.path.exists(filepath):
+        with open(filepath, 'r') as f:
+            return f.readlines()
+    return []
+
 def read_file_tail(file_path: str, x: int) -> List[str]:
-    """ Reads the last x lines of a file using a deque for efficiency."""
+    """ Reads the last x lines of a file."""
     with open(file_path, 'r') as f:
         last_lines = collections.deque(f, x)
     return list(last_lines)
+
+def get_file_size(filepath) -> int:
+    """ Reads the last x lines of a file."""
+    if os.path.exists(filepath):
+        return os.path.getsize(filepath)
+    return 0
 
 # --- Time Utility Functions ---
 

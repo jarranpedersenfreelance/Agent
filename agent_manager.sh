@@ -10,11 +10,21 @@ MEMORY_FILE="workspace/data/memory.json"
 TODO_FILE="to_do.txt"
 PATCH_FILE="workspace/data/update_request.patch"
 MAX_SNAPSHOT_SIZE=3000000 # ~3 MB (can increase up to 10)
-SNAPSHOT_EXCLUSIONS='workspace|test_workspace|*.git|.env|.DS_Store'
 
 # --- FILE LOCATIONS ---
 TEST_REPORT_FILE="test_results.xml"
 WORKSPACE_TEST_FILE="workspace/data/$TEST_REPORT_FILE"
+
+# --- SNAPSHOT EXCLUSIONS ---
+IGNORED_PATTERNS=(
+    "./workspace/*"  
+    "./test_workspace/*"  
+    "./.git/*"      
+    "./.pytest_cache/*" 
+    ".env"           
+    ".DS_Store"      
+    "$SNAPSHOT_FILE"
+)
 
 # --- HELPER FUNCTIONS ---
 
@@ -201,14 +211,49 @@ function func_snapshot() {
     echo "--- SNAPSHOT GENERATION START: $(date) ---"
     rm -f "$SNAPSHOT_FILE"
 
+    # Build the TREE exclusion string
+    TREE_EXCLUSIONS=""
+    for pattern in "${IGNORED_PATTERNS[@]}"; do
+        # 1. Remove leading './' for tree command compatibility
+        local tree_pattern="${pattern#./}"
+        # 2. Remove trailing '/*' if it's a directory pattern
+        tree_pattern="${tree_pattern%/*}"
+        
+        # 3. Skip the snapshot file name if it's just the file name
+        # The tree command will often match the entire path, so we just add the base name.
+        if [[ "$pattern" == "$SNAPSHOT_FILE" ]]; then
+            tree_pattern="$(basename "$SNAPSHOT_FILE")"
+        fi
+
+        # Add to the space-separated list
+        TREE_EXCLUSIONS="$TREE_EXCLUSIONS $tree_pattern"
+    done
+    # Remove leading space for a clean command
+    TREE_EXCLUSIONS="$(echo "$TREE_EXCLUSIONS" | sed 's/^ //')"
+
+    # Build the FIND exclusion string
+    FIND_EXCLUSIONS=""
+    for pattern in "${IGNORED_PATTERNS[@]}"; do
+        # Checks if the pattern is a directory path (ends with '/*') or a filename
+        if [[ "$pattern" == *"/*" ]]; then
+            # Use -path for directory/path exclusions
+            FIND_EXCLUSIONS="$FIND_EXCLUSIONS -not -path \"$pattern\""
+        else
+            # Use -name for specific file exclusions
+            FIND_EXCLUSIONS="$FIND_EXCLUSIONS -not -name \"$pattern\""
+        fi
+    done
+    # Remove leading space for a clean command
+    FIND_EXCLUSIONS="$(echo "$FIND_EXCLUSIONS" | sed 's/^ //')"
+
     echo "Generating Directory Structure..."
     {
         echo "=================================================="
         echo "## PROJECT DIRECTORY STRUCTURE"
         echo "=================================================="
-        tree -a -F -I "$SNAPSHOT_EXCLUSIONS" --noreport 2>/dev/null || (
+        ttree -a -F -I "$TREE_EXCLUSIONS" --noreport 2>/dev/null || (
             echo "Warning: 'tree' command not found. Falling back to 'find/ls'."
-            find . -not -path "./workspace/*" -not -path "./.git/*" -not -name "$SNAPSHOT_FILE" -not -name ".env" -not -name ".DS_Store" | sort
+            eval find . -not -name "$SNAPSHOT_FILE" "$FIND_EXCLUSIONS" | sort
         )
         echo ""
     } > "$SNAPSHOT_FILE"
@@ -216,7 +261,7 @@ function func_snapshot() {
     echo "Compiling File Contents..."
     echo "--- FILE CONTENTS START ---" >> "$SNAPSHOT_FILE"
 
-    find . -type f -not -path "./workspace/*" -not -name "$SNAPSHOT_FILE" -not -path "./.git/*" -not -name ".env" -not -name ".DS_Store" | while IFS= read -r FILE; do
+    eval find . -type f -not -name "$SNAPSHOT_FILE" "$FIND_EXCLUSIONS" | while IFS= read -r FILE; do
         echo "--- FILE START: $FILE ---" >> "$SNAPSHOT_FILE"
         cat "$FILE" >> "$SNAPSHOT_FILE" || true
         echo -e "\n--- FILE END: $FILE ---\n" >> "$SNAPSHOT_FILE"

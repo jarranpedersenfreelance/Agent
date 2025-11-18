@@ -2,6 +2,14 @@
 
 LOG_LEVEL: 4 # INFO
 
+RESOURCE_CAPS:
+    CPU: 5 # logical cores
+    SYSTEM_MEMORY: 8 # GB of RAM
+    WORKSPACE_SIZE: 10 # GB of file space
+    MEM_SIZE: 5242880 # 5MB (in bytes) of space for memory.json
+    LOG_SIZE: 5242880 # 5MB (in bytes) of space for log.txt
+
+
 FILE_PATHS:
     AGENT_PRINCIPLES_FILE: "/app/workspace/core/definitions/agent_principles.txt"
     PATCH_FILE: "/app/workspace/data/update_request.patch"

@@ -32,3 +32,8 @@ The Agent should ensure it includes all necessary changes in its update proposal
 
 ## Deployment
 The agent_manager.sh file serves as a command line tool for the Architect to perform various deployment actions. Use the **usage** command to see all commands available
+
+## Useful Commands
+To dicover max resource caps on a mac
+**Total RAM:** system_profiler SPHardwareDataType | grep "  Memory:"
+**Total Logical CPUs:** system_profiler SPHardwareDataType | grep Cores:
