@@ -3,9 +3,10 @@ import json
 from typing import Any, Dict, List
 from pydantic import BaseModel
 from google import genai
+from google.genai.errors import APIError
 
 from core.logger import Logger
-from core.definitions.models import Action, ReasonAction
+from core.definitions.models import Action, ReasonAction, SlumberAction
 from core.brain.memory import Memory
 
 # --- Pydantic Models for LLM Response Validation ---
@@ -193,11 +194,31 @@ IMPORTANT: DO NOT TRY TO WRITE_FILE IN core/ ONLY IN secondary/ OR data/
         prompt = self._build_context_prompt(current_action)
         self._logger.log_info(f"Sending prompt to Gemini for task: {current_action.task}")
 
-        response = self._client.models.generate_content(
-            model=self._model_name,
-            contents=prompt,
-            config={"response_mime_type": "application/json"}
-        )
+        try: 
+          response = self._client.models.generate_content(
+              model=self._model_name,
+              contents=prompt,
+              config={"response_mime_type": "application/json"}
+          )
+        except APIError as e:
+          if e.code == 503:
+            self._logger.log_warning("Gemini service is currently unavailable (503). Queuing SLUMBER and retrying.")
+        
+          elif e.code == 429:
+            self._logger.log_warning("Gemini rate limit exceeded (429). Queuing SLUMBER and retrying.")
+
+          else:
+            self._logger.log_warning(f"Unknown Gemini error ({e.code}). Queuing SLUMBER and retrying.")
+
+          new_queue = [
+              SlumberAction(
+                  seconds=self._constants['AGENT']['GEMINI_WAIT_SECONDS'],
+                  explanation="gemini error, waiting to retry"
+              ),
+              current_action
+          ]
+            
+          return new_queue
         
         response_text = response.text
         self._logger.log_debug(f"Gemini raw response: {response_text}")

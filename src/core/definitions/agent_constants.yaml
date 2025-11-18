@@ -21,5 +21,6 @@ AGENT:
     TASK_THOUGHT: "current_task"
     TOOL_OUTPUT_THOUGHT: "tool_output"
     MAX_REASON_STEPS: 100
+    GEMINI_WAIT_SECONDS: 10
     STARTING_TASK: "Gather information about self and environment to decide first task based on discovered purpose."
     LOG_TAIL_COUNT: 100
