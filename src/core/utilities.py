@@ -32,6 +32,13 @@ def scan_files(base_dir: str = '/app/', ignore_list: List[str] = []) -> List[str
 
 # --- YAML Utility Functions ---
 
+def yaml_dict_load(file_path: str) -> Dict[str, Any]:
+    content = yaml_safe_load(file_path)
+    if not isinstance(content, Dict):
+        raise ValueError("Tried to load dictionary from invalid yaml file")
+    return content
+
+
 def yaml_safe_load(file_path: str) -> Union[Dict[str, Any], List[Any]]:
     """Loads content from a YAML file."""
     if not os.path.exists(file_path):

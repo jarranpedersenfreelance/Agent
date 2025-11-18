@@ -1,5 +1,5 @@
-from typing import Dict, Any, List, Literal, Union
-from pydantic import BaseModel
+from typing import Dict, Any, List, Literal, Union, Annotated, ClassVar
+from pydantic import BaseModel, Field
 from enum import Enum
 
 class LogType(Enum):
@@ -23,10 +23,85 @@ class ActionType(str, Enum):
     TERMINATE = 'TERMINATE'
     NO_OP = 'NO_OP'
 
-class Action(BaseModel):
+class BaseAction(BaseModel):
     """Represents a single, executable action proposed by the brain."""
-    type: ActionType = ActionType.NO_OP
+    type: ActionType = Field(frozen=True)
     explanation: str = ""
+
+class NoOpAction(BaseAction):
+    """Represents the Reason action."""
+    type: Literal[ActionType.NO_OP] = ActionType.NO_OP # type: ignore
+
+class ReasonAction(BaseAction):
+    """Represents the Reason action."""
+    type: Literal[ActionType.REASON] = ActionType.REASON # type: ignore
+    task: str = ""
+    files_to_send: List[str] = []
+    thoughts_to_send: List[str] = []
+
+class ThinkAction(BaseAction):
+    """Represents the Think action."""
+    type: Literal[ActionType.THINK] = ActionType.THINK # type: ignore
+    delete: bool = False
+    label: str = ""
+    thought: str = ""
+
+class RunToolAction(BaseAction):
+    """Represents the RunTool action."""
+    type: Literal[ActionType.RUN_TOOL] = ActionType.RUN_TOOL # type: ignore
+    module: str = ""
+    tool_class: str = ""
+    arguments: Dict[str, Any] = {}
+
+class ToDoType(str, Enum):
+    INSERT = 'INSERT'
+    APPEND = 'APPEND'
+    REMOVE = 'REMOVE'
+    NONE = 'NONE'
+
+class UpdateToDoAction(BaseAction):
+    """Represents the UpdateToDo action."""
+    type: Literal[ActionType.UPDATE_TODO] = ActionType.UPDATE_TODO # type: ignore
+    todo_type: ToDoType = ToDoType.NONE
+    todo_item: str = ""
+
+class ReadFileAction(BaseAction):
+    """Represents the ReadFile action."""
+    type: Literal[ActionType.READ_FILE] = ActionType.READ_FILE # type: ignore
+    file_path: str = ""
+
+class WriteFileAction(BaseAction):
+    """Represents the WriteFile action."""
+    type: Literal[ActionType.WRITE_FILE] = ActionType.WRITE_FILE # type: ignore
+    file_path: str = ""
+    use_thought: str = ""
+    contents: str = ""
+
+class DeleteFileAction(BaseAction):
+    """Represents the DeleteFile action."""
+    type: Literal[ActionType.DELETE_FILE] = ActionType.DELETE_FILE # type: ignore
+    file_path: str = ""
+
+class TerminateAction(BaseAction):
+    """Represents the Terminate action."""
+    type: Literal[ActionType.TERMINATE] = ActionType.TERMINATE # type: ignore
+
+ActionUnion = Union[
+    TerminateAction,
+    DeleteFileAction,
+    WriteFileAction,
+    ReadFileAction,
+    UpdateToDoAction,
+    RunToolAction,
+    ThinkAction,
+    ReasonAction,
+    NoOpAction,
+]
+
+Action = Annotated[
+    ActionUnion,
+    Field(discriminator='type')
+]
 
 class Mem(BaseModel):
     """Represents the overall Agent memory."""
@@ -39,57 +114,3 @@ class Mem(BaseModel):
     last_memorized: str = ""
     deployed_at: str = ""
     is_test: bool = False
-
-class ReasonAction(Action):
-    """Represents the Reason action."""
-    type: Literal[ActionType.REASON] = ActionType.REASON
-    task: str = ""
-    files_to_send: List[str] = []
-    thoughts_to_send: List[str] = []
-
-class ThinkAction(Action):
-    """Represents the Think action."""
-    type: Literal[ActionType.THINK] = ActionType.THINK
-    delete: bool = False
-    label: str = ""
-    thought: str = ""
-
-class RunToolAction(Action):
-    """Represents the RunTool action."""
-    type: Literal[ActionType.RUN_TOOL] = ActionType.RUN_TOOL
-    module: str = ""
-    tool_class: str = ""
-    arguments: Dict[str, Any] = {}
-
-class ToDoType(str, Enum):
-    INSERT = 'INSERT'
-    APPEND = 'APPEND'
-    REMOVE = 'REMOVE'
-    NONE = 'NONE'
-
-class UpdateToDoAction(Action):
-    """Represents the UpdateToDo action."""
-    type: Literal[ActionType.UPDATE_TODO] = ActionType.UPDATE_TODO
-    todo_type: ToDoType = ToDoType.NONE
-    todo_item: str = ""
-
-class ReadFileAction(Action):
-    """Represents the ReadFile action."""
-    type: Literal[ActionType.READ_FILE] = ActionType.READ_FILE
-    file_path: str = ""
-
-class WriteFileAction(Action):
-    """Represents the WriteFile action."""
-    type: Literal[ActionType.WRITE_FILE] = ActionType.WRITE_FILE
-    file_path: str = ""
-    use_thought: str = ""
-    contents: str = ""
-
-class DeleteFileAction(Action):
-    """Represents the DeleteFile action."""
-    type: Literal[ActionType.DELETE_FILE] = ActionType.DELETE_FILE
-    file_path: str = ""
-
-class TerminateAction(Action):
-    """Represents the Terminate action."""
-    type: Literal[ActionType.TERMINATE] = ActionType.TERMINATE

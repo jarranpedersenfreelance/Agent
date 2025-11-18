@@ -1,36 +1,18 @@
 import os
 import json
-from typing import Any, Dict, List, Union, Annotated
-import google.generativeai as genai
-from pydantic import BaseModel, Field
+from typing import Any, Dict, List
+from pydantic import BaseModel
+from google import genai
 
 from core.logger import Logger
-from core.definitions.models import (
-    Action,
-    ReasonAction,
-    ThinkAction,
-    RunToolAction, 
-    ReadFileAction, 
-    WriteFileAction, 
-    DeleteFileAction,
-    UpdateToDoAction
-)
+from core.definitions.models import Action, ReasonAction
 from core.brain.memory import Memory
 
 # --- Pydantic Models for LLM Response Validation ---
 
-AnyAction = Annotated[
-    Union[
-      ReasonAction, ThinkAction, RunToolAction, 
-      ReadFileAction, WriteFileAction, DeleteFileAction,
-      UpdateToDoAction
-    ],
-    Field(discriminator='type')
-]
-
 # This is the expected root structure of the LLM's JSON response.
 class GeminiResponse(BaseModel):
-    actions: List[AnyAction]
+    actions: List[Action]
 
 # This string defines the exact JSON schema the LLM must follow.
 SCHEMA_DEFINITION = """
@@ -92,18 +74,18 @@ class Reason:
                  principles: str, 
                  memory: Memory):
         
-        self.constants = constants
-        self.logger = logger
-        self.principles = principles
-        self.memory = memory
-        self.gemini = Gemini(constants, principles, memory, self.logger)
+        self._constants = constants
+        self._logger = logger
+        self._principles = principles
+        self._memory = memory
+        self._gemini = Gemini(constants, principles, memory, logger)
     
     def get_next_actions(self, current_action: ReasonAction) -> List[Action]:
         # TODO Add local reasoning before elevating to Gemini
         try:
-            return self.gemini.get_next_actions(current_action)
+            return self._gemini.get_next_actions(current_action)
         except Exception as e:
-            self.logger.log_error(f"Failed to get next actions from Gemini: {e}")
+            self._logger.log_error(f"Failed to get next actions from Gemini: {e}")
             return []
 
 class Gemini:
@@ -115,43 +97,41 @@ class Gemini:
                  memory: Memory,
                  logger: Logger):
         
-        self.constants = constants
-        self.memory = memory
-        self.model_name = self.constants['API']['MODEL']
-        self.principles = principles
-        self.logger = logger
+        self._constants = constants
+        self._memory = memory
+        self._model_name = self._constants['API']['MODEL']
+        self._principles = principles
+        self._logger = logger
         
-        self.api_key = os.environ.get("GEMINI_API_KEY")
-        if not self.api_key:
-            self.logger.log_error("GEMINI_API_KEY environment variable not set. Cannot use REASON action.")
+        api_key = os.environ.get("GEMINI_API_KEY")
+        if not api_key:
             raise ValueError("GEMINI_API_KEY environment variable not set. Cannot use REASON action.")
-        
-        genai.configure(api_key=self.api_key)
-        self.model = genai.GenerativeModel(model_name=self.model_name)
+
+        self._client = genai.Client()
 
     def _build_context_prompt(self, current_action: ReasonAction) -> str:
         """Constructs the comprehensive prompt for the LLM."""
         
         # Serialize constants
         constants = {
-          "MAX_REASON_STEPS": self.constants['AGENT']['MAX_REASON_STEPS']
+          "MAX_REASON_STEPS": self._constants['AGENT']['MAX_REASON_STEPS']
         }
         constants_content = json.dumps(constants, indent=2)
         
         # Serialize memory
-        mem_files = self.memory.get_filepaths()
+        mem_files = self._memory.get_filepaths()
         selected_memory = {
-          "action_queue": self.memory.list_actions(),
-          "counters": self.memory.list_counts(),
+          "action_queue": self._memory.list_actions(),
+          "counters": self._memory.list_counts(),
           "file_contents": {
-            k: self.memory.get_file_contents(k) if k in current_action.files_to_send 
+            k: self._memory.get_file_contents(k) if k in current_action.files_to_send 
             else ""
             for k in mem_files
           },
-          "thoughts": {k: self.memory.get_thought(k) for k in current_action.thoughts_to_send},
-          "logs": self.memory.load_logs(),
-          "todo": self.memory.get_todo_list(),
-          "last_memorized": self.memory.last_memorized()
+          "thoughts": {k: self._memory.get_thought(k) for k in current_action.thoughts_to_send},
+          "logs": self._memory.load_logs(),
+          "todo": self._memory.get_todo_list(),
+          "last_memorized": self._memory.last_memorized()
         }
         memory_content = json.dumps(selected_memory, indent=2)
 
@@ -178,7 +158,7 @@ NOTE: I will TERMINATE when my todo list is empty, *only* empty todo list after 
 IMPORTANT: DO NOT TRY TO WRITE_FILE IN core/ ONLY IN secondary/ OR data/
 
 # MY AGENT PRINCIPLES:
-{self.principles}
+{self._principles}
 
 # MY CURRENT TASK:
 {current_action.task}
@@ -199,7 +179,7 @@ IMPORTANT: DO NOT TRY TO WRITE_FILE IN core/ ONLY IN secondary/ OR data/
 }}
 (I have all file contents but am only sending those relevant to the task)
 (I have more thoughts but am only sending those relevant to the task)
-(I am only sending the last {self.constants['AGENT']['LOG_TAIL_COUNT']} lines of logs)
+(I am only sending the last {self._constants['AGENT']['LOG_TAIL_COUNT']} lines of logs)
 
 # MY CURRENT MEMORY:
 {memory_content}
@@ -211,19 +191,20 @@ IMPORTANT: DO NOT TRY TO WRITE_FILE IN core/ ONLY IN secondary/ OR data/
         Calls the Gemini API to get the next list of actions.
         """
         prompt = self._build_context_prompt(current_action)
-        self.logger.log_info(f"Sending prompt to Gemini for task: {current_action.task}")
+        self._logger.log_info(f"Sending prompt to Gemini for task: {current_action.task}")
 
-        response = self.model.generate_content(
-            prompt,
-            generation_config={"response_mime_type": "application/json"}
+        response = self._client.models.generate_content(
+            model=self._model_name,
+            contents=prompt,
+            config={"response_mime_type": "application/json"}
         )
         
         response_text = response.text
-        self.logger.log_debug(f"Gemini raw response: {response_text}")
-        parsed_response = GeminiResponse.model_validate_json(response_text)
+        self._logger.log_debug(f"Gemini raw response: {response_text}")
+        if response_text is not None:
+          parsed_response = GeminiResponse.model_validate_json(response_text)
+          if parsed_response.actions:
+              return parsed_response.actions
         
-        if not parsed_response.actions:
-            self.logger.log_warning("Gemini returned an empty action list.")
-            return [] # Will trigger a debug action in core
-            
-        return parsed_response.actions
+        self._logger.log_warning("Gemini returned an empty action list.")
+        return [] # Will trigger a debug action in core

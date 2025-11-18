@@ -14,6 +14,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         build-essential \
         git \
+        jq \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     # Clean up build tools to reduce final image size

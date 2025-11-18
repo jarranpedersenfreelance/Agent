@@ -19,6 +19,7 @@ services:
       
       # --- Base Directory Files (Read-Only) ---
       - ./README.md:/app/README.md:ro 
+      - ./pytest.ini:/app/pytest.ini
       - ./Dockerfile:/app/Dockerfile:ro
       - ./docker-compose.yml:/app/docker-compose.yml:ro
       - ./requirements.txt:/app/requirements.txt:ro
@@ -46,6 +47,7 @@ services:
       
       # --- Base Directory Files (Read-Only) ---
       - ./README.md:/app/README.md:ro 
+      - ./pytest.ini:/app/pytest.ini
       - ./Dockerfile:/app/Dockerfile:ro
       - ./docker-compose.yml:/app/docker-compose.yml:ro
       - ./requirements.txt:/app/requirements.txt:ro

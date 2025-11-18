@@ -4,7 +4,7 @@ from typing import Dict, Any
 import pytest
 
 from core.logger import Logger
-from core.utilities import read_file, yaml_safe_load
+from core.utilities import read_file, yaml_dict_load
 from core.definitions.models import Count, ReasonAction, TerminateAction, ActionType
 from core.brain.memory import Memory
 from core.brain.reason import Reason
@@ -19,97 +19,98 @@ class AgentCore:
     """
     
     def __init__(self, constants: Dict[str, Any]):
-        self.constants = constants
-        self.logger = Logger(constants)
-        self.agent_principles = read_file(self.constants['FILE_PATHS']['AGENT_PRINCIPLES_FILE'])
-        self.logger.log_info("Initializing AgentCore")
+        self._constants = constants
+        self._logger = Logger(constants)
+        self._agent_principles = read_file(constants['FILE_PATHS']['AGENT_PRINCIPLES_FILE'])
+        self._logger.log_info("Initializing AgentCore")
         
         # Initialize Modules
         is_test = True if os.environ.get("AGENT_TEST_MODE") else False
-        self.memory = Memory(self.constants, self.logger, is_test)
-        self.reason = Reason(self.constants, self.logger, self.agent_principles, self.memory)
-        self.action_handler = ActionHandler(self.constants, self.logger, self.memory)
+        self._memory = Memory(self._constants, self._logger, is_test)
+        self._reason = Reason(self._constants, self._logger, self._agent_principles, self._memory)
+        self._action_handler = ActionHandler(self._constants, self._logger, self._memory)
 
-        self.logger.log_info("AgentCore initialized")
+        self._logger.log_info("AgentCore initialized")
 
     def _debug(self, debug_str: str):
-        self.logger.log_warning(debug_str)
-        self.logger.log_warning(f"Resetting actions with debug REASON, adding current task to todo")
-        self.memory.add_immediate_todo(self.memory.get_thought(self.constants['AGENT']['TASK_THOUGHT']))
-        self.memory.reset_actions(
+        self._logger.log_warning(debug_str)
+        self._logger.log_warning(f"Resetting actions with debug REASON, adding current task to todo")
+        self._memory.add_immediate_todo(self._memory.get_thought(self._constants['AGENT']['TASK_THOUGHT']))
+        self._memory.reset_actions(
             f"Review logs in memory and debug what went wrong. Implement Fix. Then continue with previous task (now at front of todo list)", 
             debug_str
         )
 
     def run(self):
-        self.logger.log_info("Starting execution loop")
+        self._logger.log_info("Starting execution loop")
         
-        self.memory.set_count(Count.REASON, 0)
-        max_steps = self.constants['AGENT']['MAX_REASON_STEPS']
+        self._memory.set_count(Count.REASON, 0)
+        max_steps = self._constants['AGENT']['MAX_REASON_STEPS']
 
         while True:
-            self.memory.load_logs()
-            self.memory.memorize()
+            self._memory.load_logs()
+            self._memory.memorize()
+
+            action_list = self._memory.list_actions()
+            if not action_list:
+                self._logger.log_warning("Ran out of actions")
+                self._logger.log_info(f"Resetting actions, adding [REASON: Plan] action")
+                self._memory.reset_actions("Plan", "action queue was empty")
 
             # TERMINATE when todo list is empty, but leave last reason action
-            todo = self.memory.get_todo_list()
+            todo = self._memory.get_todo_list()
             if not todo:
-                last_action = self.memory.pop_last_action()
-                self.memory.empty_actions()
-                self.memory.add_action(TerminateAction(
+                last_action = self._memory.pop_last_action()
+                self._memory.empty_actions()
+                self._memory.add_action(TerminateAction(
                     explanation = "empty todo list"
                 ))
-                self.memory.add_action(last_action)
+                self._memory.add_action(last_action)
 
-            action = self.memory.pop_action()
+            action = self._memory.pop_action()
 
             try:
-                if not action:
-                    self.logger.log_warning("Ran out of actions")
-                    self.logger.log_info(f"Resetting actions, adding [REASON: Plan] action")
-                    self.memory.reset_actions("Plan", "action queue was empty")
-
-                elif isinstance(action, TerminateAction):
-                    self.logger.log_info("TERMINATE action in queue, Agent terminating")
+                if isinstance(action, TerminateAction):
+                    self._logger.log_info("TERMINATE action in queue, Agent terminating")
                     break
                 
                 elif isinstance(action, ReasonAction):
-                    reason_count = self.memory.inc_count(Count.REASON)
-                    self.memory.set_thought(self.constants['AGENT']['TASK_THOUGHT'], action.task)
+                    reason_count = self._memory.inc_count(Count.REASON)
+                    self._memory.set_thought(self._constants['AGENT']['TASK_THOUGHT'], action.task)
                     
                     if reason_count == max_steps:
-                        self.logger.log_info("Reason limit reached, Agent terminating")
+                        self._logger.log_info("Reason limit reached, Agent terminating")
                         break
 
-                    self.logger.log_action(action, action.task)
-                    new_actions = self.reason.get_next_actions(action)
+                    self._logger.log_action(action, action.task)
+                    new_actions = self._reason.get_next_actions(action)
                     if new_actions:
                         last_action = new_actions[-1]
                         if last_action.type != ActionType.REASON:
                             self._debug("last reason action returned an action list that didn't end with a REASON action")
                         
                         else:
-                            self.memory.add_actions(new_actions)
-                            self.logger.log_info(f"Queued {len(new_actions)} new actions")
+                            self._memory.add_actions(new_actions)
+                            self._logger.log_info(f"Queued {len(new_actions)} new actions")
                     else:
                         self._debug("last reason action returned no actions")
 
                 else:
-                    self.action_handler.exec_action(action)
+                    self._action_handler.exec_action(action)
 
             except Exception as e:
-                self.logger.log_error(f"Failed to execute action {action.type.name}: {e}")
-                self.logger.log_error(f"Stack Trace: {traceback.format_exc()}")
+                self._logger.log_error(f"Failed to execute action {action.type.name}: {e}")
+                self._logger.log_error(f"Stack Trace: {traceback.format_exc()}")
                 self._debug(f"failed to execute action {action.type.name}")
 
     def run_tests(self):
         """Runs all tests and outputs results"""
-        test_dir = self.constants['FILE_PATHS']['TEST_DIR']
-        report_file = self.constants['FILE_PATHS']['TEST_OUTPUT']
-        self.logger.log_info(f"Starting test run in directory: {test_dir}")
+        test_dir = self._constants['FILE_PATHS']['TEST_DIR']
+        report_file = self._constants['FILE_PATHS']['TEST_OUTPUT']
+        self._logger.log_info(f"Starting test run in directory: {test_dir}")
         
         if not os.path.isdir(test_dir):
-            self.logger.log_error(f"Test directory not found: {test_dir}")
+            self._logger.log_error(f"Test directory not found: {test_dir}")
             return
             
         try:
@@ -126,22 +127,22 @@ class AgentCore:
             
             # Log the result
             if exit_code == 0:
-                self.logger.log_info(f"All tests passed! Report generated at: {report_file}")
+                self._logger.log_info(f"All tests passed! Report generated at: {report_file}")
             else:
-                self.logger.log_warning(f"Tests failed (Exit code: {exit_code}). Report generated at: {report_file}")
+                self._logger.log_warning(f"Tests failed (Exit code: {exit_code}). Report generated at: {report_file}")
 
         except Exception as e:
-            self.logger.log_error(f"Failed to run pytest: {e}")
-            self.logger.log_error(f"Stack Trace: {traceback.format_exc()}")
+            self._logger.log_error(f"Failed to run pytest: {e}")
+            self._logger.log_error(f"Stack Trace: {traceback.format_exc()}")
             
-        self.logger.log_info("Test run finished.")
+        self._logger.log_info("Test run finished.")
 
 # --- Main Entry Point ---
 if __name__ == "__main__":
     try:
-        constants = yaml_safe_load(CONSTANTS_YAML)
+        constants = yaml_dict_load(CONSTANTS_YAML)
         agent = AgentCore(constants)
-        if agent.memory.is_test():
+        if agent._memory.is_test():
             agent.run_tests()
         else:
             agent.run()

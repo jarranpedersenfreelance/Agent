@@ -1,16 +1,12 @@
 import os
 import pytest
-from typing import Dict, Any
 from collections.abc import Generator
 
 # --- Import Core Components ---
 from core.agent_core import AgentCore, CONSTANTS_YAML
-from core.logger import Logger
-from core.brain.memory import Memory
-from core.execution.action_handler import ActionHandler
-from core.utilities import yaml_safe_load, write_file, read_file, delete_file
+from core.utilities import yaml_dict_load, write_file, read_file, delete_file
 from core.definitions.models import (
-    Action,
+    NoOpAction,
     ActionType,
     ReasonAction,
     ThinkAction,
@@ -34,7 +30,7 @@ def agent_setup() -> Generator[AgentCore]:
     This fixture runs *before each test function* that requests it.
     """
     # Load constants
-    constants = yaml_safe_load(os.path.join("/app/workspace", CONSTANTS_YAML))
+    constants = yaml_dict_load(os.path.join("/app/workspace", CONSTANTS_YAML))
     
     # Define paths for test-specific files
     test_log_file = os.path.join(TEST_DATA_DIR, "test_log.txt")
@@ -85,10 +81,10 @@ def test_handle_think(agent_setup):
         label=label,
         thought=content
     )
-    agent.action_handler.exec_action(insert_action)
+    agent._action_handler.exec_action(insert_action)
     
-    assert agent.memory.get_thought(label) == content
-    assert label in agent.memory.list_thoughts()
+    assert agent._memory.get_thought(label) == content
+    assert label in agent._memory.list_thoughts()
 
     # Test deleting a thought
     delete_action = ThinkAction(
@@ -96,9 +92,9 @@ def test_handle_think(agent_setup):
         delete=True,
         label=label
     )
-    agent.action_handler.exec_action(delete_action)
+    agent._action_handler.exec_action(delete_action)
     
-    assert label not in agent.memory.list_thoughts()
+    assert label not in agent._memory.list_thoughts()
 
 def test_handle_write_file(agent_setup):
     """Tests writing a new file."""
@@ -116,14 +112,14 @@ def test_handle_write_file(agent_setup):
     if os.path.exists(file_path):
         os.remove(file_path)
         
-    agent.action_handler.exec_action(write_action)
+    agent._action_handler.exec_action(write_action)
     
     # Verify file was written to disk
     assert os.path.exists(file_path)
     assert read_file(file_path) == content
     
     # Verify memory was updated
-    assert agent.memory.get_file_contents(file_path) == content
+    assert agent._memory.get_file_contents(file_path) == content
     
     # Cleanup
     delete_file(file_path)
@@ -137,18 +133,18 @@ def test_handle_read_file(agent_setup):
     
     # Manually create the file and add it to memory (as if it already exists)
     write_file(file_path, content)
-    agent.memory.fill_file_contents(file_path, "") 
-    assert agent.memory.get_file_contents(file_path) == ""
+    agent._memory.fill_file_contents(file_path, "") 
+    assert agent._memory.get_file_contents(file_path) == ""
     
     # Execute the READ_FILE action
     read_action = ReadFileAction(
         explanation="Testing file reading",
         file_path=file_path
     )
-    agent.action_handler.exec_action(read_action)
+    agent._action_handler.exec_action(read_action)
     
     # Verify memory was updated with file contents
-    assert agent.memory.get_file_contents(file_path) == content
+    assert agent._memory.get_file_contents(file_path) == content
     
     # Cleanup
     delete_file(file_path)
@@ -161,20 +157,20 @@ def test_handle_delete_file(agent_setup):
     
     # Manually create the file and add it to memory
     write_file(file_path, "to be deleted")
-    agent.memory.fill_file_contents(file_path, "to be deleted")
+    agent._memory.fill_file_contents(file_path, "to be deleted")
     assert os.path.exists(file_path)
-    assert file_path in agent.memory.get_filepaths()
+    assert file_path in agent._memory.get_filepaths()
     
     # Execute the DELETE_FILE action
     delete_action = DeleteFileAction(
         explanation="Testing file deletion",
         file_path=file_path
     )
-    agent.action_handler.exec_action(delete_action)
+    agent._action_handler.exec_action(delete_action)
     
     # Verify file was deleted from disk and memory
     assert not os.path.exists(file_path)
-    assert file_path not in agent.memory.get_filepaths()
+    assert file_path not in agent._memory.get_filepaths()
 
 def test_handle_update_todo(agent_setup):
     """Tests all ToDo update operations."""
@@ -186,9 +182,9 @@ def test_handle_update_todo(agent_setup):
         todo_type=ToDoType.APPEND,
         todo_item="Task 2"
     )
-    agent.memory.add_todo("Task 1") # Start with one task
-    agent.action_handler.exec_action(append_action)
-    assert agent.memory.get_todo_list() == ["Task 1", "Task 2"]
+    agent._memory.add_todo("Task 1") # Start with one task
+    agent._action_handler.exec_action(append_action)
+    assert agent._memory.get_todo_list() == ["Task 1", "Task 2"]
 
     # Test INSERT
     insert_action = UpdateToDoAction(
@@ -196,19 +192,19 @@ def test_handle_update_todo(agent_setup):
         todo_type=ToDoType.INSERT,
         todo_item="Task 0"
     )
-    agent.action_handler.exec_action(insert_action)
-    assert agent.memory.get_todo_list() == ["Task 0", "Task 1", "Task 2"]
+    agent._action_handler.exec_action(insert_action)
+    assert agent._memory.get_todo_list() == ["Task 0", "Task 1", "Task 2"]
 
     # Test REMOVE
     remove_action = UpdateToDoAction(
         explanation="Testing REMOVE",
         todo_type=ToDoType.REMOVE
     )
-    agent.action_handler.exec_action(remove_action)
-    assert agent.memory.get_todo_list() == ["Task 1", "Task 2"]
+    agent._action_handler.exec_action(remove_action)
+    assert agent._memory.get_todo_list() == ["Task 1", "Task 2"]
     
-    agent.action_handler.exec_action(remove_action)
-    assert agent.memory.get_todo_list() == ["Task 2"]
+    agent._action_handler.exec_action(remove_action)
+    assert agent._memory.get_todo_list() == ["Task 2"]
 
 def test_handle_run_tool(agent_setup):
     """Tests running a tool, specifically DiffTool."""
@@ -219,11 +215,11 @@ def test_handle_run_tool(agent_setup):
     test_file_content = "print('hello tool')"
     
     patch_file_path = os.path.join(TEST_DATA_DIR, "tool_test.patch")
-    tool_output_thought = agent.constants['AGENT']['TOOL_OUTPUT_THOUGHT']
+    tool_output_thought = agent._constants['AGENT']['TOOL_OUTPUT_THOUGHT']
     
     # Manually create a new file in the workspace
     write_file(test_file_path_abs, test_file_content)
-    agent.memory.fill_file_contents(test_file_path_abs, test_file_content)
+    agent._memory.fill_file_contents(test_file_path_abs, test_file_content)
     
     # Define the RUN_TOOL action
     run_tool_action = RunToolAction(
@@ -237,7 +233,7 @@ def test_handle_run_tool(agent_setup):
     )
     
     # Execute the action
-    agent.action_handler.exec_action(run_tool_action)
+    agent._action_handler.exec_action(run_tool_action)
     
     # Verify the patch file was created
     assert os.path.exists(patch_file_path)
@@ -249,7 +245,7 @@ def test_handle_run_tool(agent_setup):
     assert f"+{test_file_content}" in patch_content
     
     # Verify the tool output was stored in the correct thought
-    assert agent.memory.get_thought(tool_output_thought) == patch_content
+    assert agent._memory.get_thought(tool_output_thought) == patch_content
     
     # Cleanup
     delete_file(test_file_path_abs)
@@ -259,10 +255,10 @@ def test_handle_no_op(agent_setup):
     """Tests that the NO_OP action runs without error."""
     agent = agent_setup
     
-    no_op_action = Action(type=ActionType.NO_OP, explanation="Testing NO_OP")
+    no_op_action = NoOpAction(explanation="Testing NO_OP")
     
     try:
-        agent.action_handler.exec_action(no_op_action)
+        agent._action_handler.exec_action(no_op_action)
         assert True
     except Exception as e:
         pytest.fail(f"NO_OP action raised an exception: {e}")
@@ -277,15 +273,15 @@ def test_empty_todo_terminates(agent_setup):
     agent = agent_setup
     
     # Manually set up the termination condition
-    agent.memory.empty_actions()
-    agent.memory.add_action(ReasonAction(task="This should be the last action"))
-    agent.memory.memory.todo = [] 
+    agent._memory.empty_actions()
+    agent._memory.add_action(ReasonAction(task="This should be the last action"))
+    agent._memory._mem.todo = [] 
     
     # Run the agent
     agent.run()
     
     # After .run() finishes, check the final state
-    final_actions = agent.memory.list_actions()
+    final_actions = agent._memory.list_actions()
     assert len(final_actions) == 1
     assert final_actions[0].type == ActionType.REASON
 
@@ -301,21 +297,22 @@ def test_patch(agent_setup):
     new_file_abs_path = f"/app/workspace/{new_file_rel_path}"
     new_file_content = "Hello World"
     
-    patch_file_path = agent.constants['FILE_PATHS']['PATCH_FILE']
+    patch_file_path = agent._constants['FILE_PATHS']['PATCH_FILE']
     
     # Define the multi-step ToDo list for the agent
     todo_list = [
-        f"Write a new file to {new_file_rel_path} with the exact content: {new_file_content}",
+        f"Write a new file to {new_file_rel_path} with this **exact** text: {new_file_content}",
+        f"Verify the new file {new_file_rel_path} has this **exact** text: {new_file_content}",
         f"Use the DiffTool to create a patch for the new file {new_file_rel_path} and save it to the default patch file path.",
         f"Read the patch file from {patch_file_path} and verify its contents are correct for adding {new_file_rel_path}. If not, retry."
     ]
     
     # Load the todo list
     for item in todo_list:
-        agent.memory.add_todo(item)
+        agent._memory.add_todo(item)
         
     # Reset the action queue to kick off the reasoning loop
-    agent.memory.reset_actions(
+    agent._memory.reset_actions(
         start_task=f"Begin E2E test: {todo_list[0]}",
         explanation="test_patch setup"
     )
@@ -327,7 +324,7 @@ def test_patch(agent_setup):
         os.remove(patch_file_path)
 
     # Run Agent, set a reasonable step limit to prevent too many loops during a test
-    agent.constants['AGENT']['MAX_REASON_STEPS'] = 15 
+    agent._constants['AGENT']['MAX_REASON_STEPS'] = 15 
     agent.run()
     
     # Verify the new file was created correctly
@@ -344,7 +341,7 @@ def test_patch(agent_setup):
     assert new_file_content in patch_content
 
     # Final check: todo list should be empty
-    assert not agent.memory.get_todo_list(), "Agent did not complete its todo list"
+    assert not agent._memory.get_todo_list(), "Agent did not complete its todo list"
     
     # Cleanup
     if os.path.exists(new_file_abs_path):

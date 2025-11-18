@@ -10,7 +10,7 @@ class DiffTool(Tool):
     against their original versions in the /app/src/ directory.
     """
 
-    def run(self, args: Dict[str, Any]) -> str:
+    def run(self, args: Dict[str, Any] = {}) -> str:
         """
         Generates a unified diff string for multiple files and writes it to a file.
 
@@ -27,7 +27,7 @@ class DiffTool(Tool):
         """
         files_to_diff: List[str] = args.get("files", [])
         if not files_to_diff:
-            self.logger.log_warning("DiffTool ran but 'files' list was empty.")
+            self._logger.log_warning("DiffTool ran but 'files' list was empty.")
             return ""
 
         all_diffs: List[str] = []
@@ -71,10 +71,10 @@ class DiffTool(Tool):
         if output_file_path:
             patch_path = output_file_path
         else:
-            patch_path = self.constants['FILE_PATHS']['PATCH_FILE']
+            patch_path = self._constants['FILE_PATHS']['PATCH_FILE']
             
         write_file(patch_path, file_content)
-        self.memory.fill_file_contents(patch_path, file_content)
+        self._memory.fill_file_contents(patch_path, file_content)
         
-        self.logger.log_info(f"DiffTool generated patch for {len(files_to_diff)} files.")
+        self._logger.log_info(f"DiffTool generated patch for {len(files_to_diff)} files.")
         return file_content
