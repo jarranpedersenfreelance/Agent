@@ -299,12 +299,9 @@ def test_patch(agent_setup):
     
     patch_file_path = agent._constants['FILE_PATHS']['PATCH_FILE']
     
-    # Define the multi-step ToDo list for the agent
+    # Define ToDo list for the agent
     todo_list = [
-        f"Write a new file to {new_file_rel_path} with this **exact** text: {new_file_content}",
-        f"Verify the new file {new_file_rel_path} has this **exact** text: {new_file_content}, if not write it correctly",
-        f"Use the DiffTool to create a patch for the new file {new_file_rel_path} and save it to the default patch file path.",
-        f"Read the patch file from {patch_file_path} and verify its contents are correct for adding {new_file_rel_path}. If not, retry."
+        f"Write a new file to {new_file_rel_path} with this **exact** text: {new_file_content}, then use the DiffTool to create a patch for the new file {new_file_rel_path} and save it to the default patch file path."
     ]
     
     # Load the todo list
@@ -324,7 +321,7 @@ def test_patch(agent_setup):
         os.remove(patch_file_path)
 
     # Run Agent, set a reasonable step limit to prevent too many loops during a test
-    agent._constants['AGENT']['MAX_REASON_STEPS'] = 15 
+    agent._constants['AGENT']['MAX_REASON_STEPS'] = 5 
     agent.run()
     
     # Verify the new file was created correctly
